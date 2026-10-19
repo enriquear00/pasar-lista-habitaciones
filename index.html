@@ -1,22 +1,361 @@
-<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Pasar Lista</title><meta name="theme-color" content="#18243a"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="Pasar Lista"><link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="icon-192.png"><style>
-*{box-sizing:border-box}body{margin:0;background:#f4f6fa;color:#172033;font-family:system-ui,-apple-system,Segoe UI,sans-serif}header{background:#18243a;color:#fff;padding:20px 16px}h1{margin:0 0 4px;font-size:1.45rem}header p{margin:0;color:#d4dbea}main{max-width:1100px;margin:auto;padding:14px}.tabs,.filters,.actions{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}.tab,.action{font:inherit;cursor:pointer;border:1px solid #cbd3e1;background:white;border-radius:10px;padding:10px 13px;color:#172033}.tab.active{background:#243957;color:white}.filters input{font:inherit;padding:11px;border:1px solid #cbd3e1;border-radius:10px;flex:1;min-width:180px}.summary{background:white;border:1px solid #e0e5ed;border-radius:12px;padding:12px;margin-bottom:14px;display:flex;gap:8px;justify-content:space-between;flex-wrap:wrap}.rooms{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:14px}.room{background:white;border:1px solid #dce2eb;border-radius:14px;padding:13px}.roomhead{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:10px}.roomhead h2{font-size:1.1rem;margin:0}.course{font-size:.78rem;color:#667085;text-align:right}.people{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}.person{min-width:0;border:1px solid #d9e0ea;border-radius:10px;padding:7px 4px;background:#fff;cursor:pointer;text-align:center;color:#172033}.person img{width:100%;height:88px;object-fit:contain;display:block;background:#f6f7f9;border-radius:6px;margin-bottom:5px}.person .name{font-size:.75rem;font-weight:650;line-height:1.15;display:block;overflow-wrap:anywhere;min-height:2.2em}.person .status{font-size:.7rem;display:block;margin-top:5px;color:#667085}.person-wrap{min-width:0;display:flex;flex-direction:column;gap:4px}.absence-reason{width:100%;font:inherit;font-size:.68rem;border:1px solid #d98989;border-radius:7px;padding:5px 2px;background:#fff;color:#7f1d1d}.absence-print-label{display:none;font-size:.68rem;font-weight:700;margin-top:3px;color:#8b1e1e}.person.present{border-color:#62ad88;background:#effaf4}.person.present .status{color:#187247}.person.absent{border-color:#d98989;background:#fff0f0}.person.absent .status{color:#b42318}.person.course-status{border-color:#d6b45b;background:#fff9e8}.person.course-status .status{color:#8a6500}.person.course{border-color:#d6b45b;background:#fff9e8}.person.course .status{color:#8a6500}.person.late{border-color:#e08a3c;background:#fff4ea}.person.late .status{color:#b4520b;font-weight:600}.late-time{width:100%;font:inherit;font-size:.72rem;border:1px solid #e08a3c;border-radius:7px;padding:4px 2px;background:#fff;color:#7a3a07;text-align:center}.late-print-label{display:none;font-size:.68rem;font-weight:700;margin-top:3px;color:#b4520b}.vacant{border:1px dashed #e0e5ed;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#b5bdca;font-size:.75rem;min-height:130px}.progress{height:7px;background:#e6eaf0;border-radius:8px;overflow:hidden;width:100%;margin-top:8px}.bar{height:100%;background:#2d8a63;width:0}.hidden{display:none}.note{font-size:.83rem;color:#657086;margin:15px 2px}@media(max-width:520px){header{padding:16px 12px}main{padding:10px}.rooms{grid-template-columns:1fr}.people{grid-template-columns:repeat(3,minmax(0,1fr))}.person img{height:clamp(72px,23vw,110px)}.tab,.action{padding:10px 9px;font-size:.86rem}.summary{font-size:.86rem}}@media print{header{background:white;color:black;padding:0 0 10px}header p{color:black}.tabs,.filters,.actions,.note{display:none}main{padding:0}.rooms{grid-template-columns:repeat(2,1fr)}.room{break-inside:avoid}.person,.vacant{break-inside:avoid}body.print-absent .summary,body.print-absent .person-wrap:not(.print-me),body.print-absent .vacant,body.print-absent .room:not(:has(.print-me)){display:none!important}body.print-absent .late-time{display:none!important}body.print-absent .late-print-label{display:block!important}body.print-absent .absence-reason{display:none!important}body.print-absent .absence-print-label{display:block!important}body.print-absent header h1{font-size:1.35rem}body.print-absent header h1:after{content:" — AUSENTES NO JUSTIFICADOS Y TARDES"}body.print-absent .rooms{grid-template-columns:repeat(2,1fr)}}
-.empty{background:#fff;border:1px dashed #b9c3d4;border-radius:14px;padding:26px 18px;text-align:center;line-height:1.5}.empty h2{margin:0 0 6px;font-size:1.15rem}.empty p{margin:0 auto 16px;max-width:460px;color:#4a5568}.action.primary{background:#243957;color:#fff;border-color:#243957;font-weight:600}.action.danger{color:#b42318;border-color:#e6b4b4}.datos{margin-top:22px;background:#fff;border:1px solid #e0e5ed;border-radius:12px;padding:12px;font-size:.85rem;color:#4a5568;display:flex;flex-direction:column;gap:10px}.datos .row{display:flex;gap:8px;flex-wrap:wrap}.msg{font-size:.85rem;margin:8px 0 0;color:#b42318}body.sin-datos .tabs,body.sin-datos .filters,body.sin-datos .summary,body.sin-datos #rooms,body.sin-datos .note,body.sin-datos .datos{display:none!important}@media print{.datos{display:none!important}}
-.person .ph{width:100%;height:88px;display:grid;place-items:center;background:#f6f7f9;border-radius:6px;margin-bottom:5px;font-size:1.6rem;font-weight:700;color:#8a94a6}@media(max-width:520px){.person .ph{height:clamp(72px,23vw,110px)}}
-</style></head><body><header><h1>Pasar lista por habitaciones</h1><p>Pulsa cada tarjeta para cambiar el estado: presente, llegó tarde, ausente o en un curso. Si llegó tarde se apunta la hora (puedes cambiarla); si está ausente, elige el motivo.</p></header><main>
-<section id="vacio" class="empty" hidden><h2>Aún no hay residentes en este móvil</h2><p>Pulsa <b>Cargar residentes</b> y elige el archivo <b>residentes-habitaciones.json</b> que te ha pasado el responsable. Solo hace falta la primera vez: se guarda en este móvil y funciona sin internet.</p><button class="action primary" data-act="cargar">Cargar residentes</button><p class="msg" id="msgVacio" hidden></p></section><div class="tabs"><button class="tab active" data-floor="1">1.ª planta · 201–212</button><button class="tab" data-floor="2">2.ª planta · 301–312</button><button class="tab" data-floor="all">Todas</button></div><div class="filters"><input id="search" placeholder="Buscar nombre o habitación…"><button class="action" id="reset">Reiniciar planta</button><button class="action" id="csv">Descargar para Excel</button><button class="action" id="print">Imprimir no justificados y tardes</button></div><div class="summary"><div><strong id="summaryTitle">1.ª planta</strong><div id="counts">0 presentes · 0 ausentes · 0 pendientes</div></div><div id="done">0/0 pasados</div><div class="progress"><div class="bar" id="bar"></div></div></div><div class="rooms" id="rooms"></div><p class="note">Los huecos marcados como libres en los PDF aparecen como vacantes y no cuentan como personas.</p><div class="datos" id="datos"></div>
-</main>
-<input type="file" id="fichero" accept=".json,application/json" hidden><script>
-let data={};
-const DBN='pasarListaHabitaciones',ST='kv';
-function idb(){return new Promise((ok,ko)=>{const r=indexedDB.open(DBN,1);r.onupgradeneeded=()=>r.result.createObjectStore(ST);r.onsuccess=()=>ok(r.result);r.onerror=()=>ko(r.error)})}
-async function dbGet(k){const d=await idb();return new Promise((ok,ko)=>{const r=d.transaction(ST).objectStore(ST).get(k);r.onsuccess=()=>ok(r.result);r.onerror=()=>ko(r.error)})}
-async function dbSet(k,v){const d=await idb();return new Promise((ok,ko)=>{const t=d.transaction(ST,'readwrite');t.objectStore(ST).put(v,k);t.oncomplete=()=>ok();t.onerror=()=>ko(t.error)})}
-async function dbDel(k){const d=await idb();return new Promise((ok,ko)=>{const t=d.transaction(ST,'readwrite');t.objectStore(ST).delete(k);t.oncomplete=()=>ok();t.onerror=()=>ko(t.error)})}
-let cargado=null;
-function aplicar(d){data={};for(const h of d.habitaciones)data[h.habitacion]={course:h.curso,people:h.people};cargado=d.cargado||null}
-let floor='1';const states=JSON.parse(localStorage.getItem('attendanceRoomStates')||'{}');const absenceReasons=JSON.parse(localStorage.getItem('attendanceAbsenceReasons')||'{}');const lateTimes=JSON.parse(localStorage.getItem('attendanceLateTimes')||'{}');const ahora=()=>new Date().toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'});const norm=s=>String(s).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();function save(){localStorage.setItem('attendanceRoomStates',JSON.stringify(states));localStorage.setItem('attendanceAbsenceReasons',JSON.stringify(absenceReasons));localStorage.setItem('attendanceLateTimes',JSON.stringify(lateTimes))}function render(){const vacio=!Object.keys(data).length;document.body.classList.toggle("sin-datos",vacio);document.getElementById("vacio").hidden=!vacio;if(vacio)return;pintarDatos();document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.floor===floor));let q=norm(document.getElementById('search').value);let roomIds=Object.keys(data).filter(r=>floor==='all'||(floor==='1'?r.startsWith('2'):r.startsWith('3')));let total=0,present=0,absent=0,pending=0,inCourse=0,late=0;let output='';for(let r of roomIds){let room=data[r];let people=room.people;let matches=people.some(p=>p&&norm(p.name).includes(q))||norm('Habitación '+r+' '+room.course).includes(q);if(q&&!matches)continue;let slots=people.map((p,i)=>{if(!p)return '<div class="vacant">Vacante</div>';let key=r+'|'+p.name;let s=states[key]||'pending';total++;if(s==='present')present++;else if(s==='late')late++;else if(s==='absent')absent++;else if(s==='course')inCourse++;else pending++;let label=s==='present'?'Presente':s==='late'?'Llegó tarde':s==='absent'?'Ausente':s==='course'?'En un curso':'Pendiente';const imprimir=s==='late'||(s==='absent'&&(absenceReasons[key]||'unjustified')==='unjustified');return `<div class="person-wrap${imprimir?' print-me':''}"><button class="person ${s}" data-room="${r}" data-name="${p.name.replace(/&/g,'&amp;').replace(/"/g,'&quot;')}">${p.photo?`<img src="${p.photo}" alt="Foto de ${p.name}" loading="lazy">`:`<span class="ph">${p.name.split(/\s+/).slice(0,2).map(w=>w[0]).join("")}</span>`}<span class="name">${p.name}</span><span class="status">${label}</span></button>${s==='late'?`<input type="time" class="late-time" aria-label="Hora de llegada de ${p.name}" data-key="${r}|${p.name.replace(/&/g,'&amp;').replace(/"/g,'&quot;')}" value="${lateTimes[key]||''}"><span class="late-print-label">Llegó a las ${lateTimes[key]||'—'}</span>`:''}${s==='absent'?`<select class="absence-reason" aria-label="Motivo de ausencia de ${p.name}" data-key="${r}|${p.name.replace(/&/g,'&amp;').replace(/"/g,'&quot;')}"><option value="unjustified" ${(absenceReasons[key]||'unjustified')==='unjustified'?'selected':''}>No justificado</option><option value="justified" ${(absenceReasons[key]||'')==='justified'?'selected':''}>Justificado</option><option value="home" ${(absenceReasons[key]||'')==='home'?'selected':''}>En casa</option></select><span class="absence-print-label">${({'unjustified':'No justificado','justified':'Justificado','home':'En casa'})[absenceReasons[key]||'unjustified']}</span>`:''}</div>`}).join('');output+=`<section class="room"><div class="roomhead"><h2>Habitación ${r}</h2><span class="course">${room.course}</span></div><div class="people">${slots}</div></section>`}document.getElementById('rooms').innerHTML=output||'<p>No hay coincidencias.</p>';document.getElementById('summaryTitle').textContent=floor==='all'?'Todas las habitaciones':floor==='1'?'1.ª planta':'2.ª planta';document.getElementById('counts').textContent=`${present} presentes · ${late} tarde · ${absent} ausentes · ${inCourse} en un curso · ${pending} pendientes`;document.getElementById('done').textContent=`${present+late+absent+inCourse}/${total} pasados`;document.getElementById('bar').style.width=(total?(present+late+absent+inCourse)/total*100:0)+'%';document.querySelectorAll('.person').forEach(b=>b.onclick=()=>{let k=b.dataset.room+'|'+b.dataset.name;let s=states[k]||'pending';states[k]=s==='pending'?'present':s==='present'?'late':s==='late'?'absent':s==='absent'?'course':'pending';if(states[k]==='late')lateTimes[k]=ahora();else delete lateTimes[k];save();render()});document.querySelectorAll('.absence-reason').forEach(sel=>sel.onchange=()=>{absenceReasons[sel.dataset.key]=sel.value;save();render()});document.querySelectorAll('.late-time').forEach(t=>t.onchange=()=>{lateTimes[t.dataset.key]=t.value;save();render()})}document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{floor=b.dataset.floor;render()});document.getElementById('search').addEventListener('input',render);document.getElementById('reset').onclick=()=>{if(confirm('¿Reiniciar los estados de la selección actual?')){for(let k of Object.keys(states)){let r=k.split('|')[0];if(floor==='all'||(floor==='1'?r.startsWith('2'):r.startsWith('3')))delete states[k]}for(let k of Object.keys(absenceReasons)){let r=k.split('|')[0];if(floor==='all'||(floor==='1'?r.startsWith('2'):r.startsWith('3')))delete absenceReasons[k]}for(let k of Object.keys(lateTimes)){let r=k.split('|')[0];if(floor==='all'||(floor==='1'?r.startsWith('2'):r.startsWith('3')))delete lateTimes[k]}save();render()}};document.getElementById('print').onclick=()=>{document.body.classList.add('print-absent');window.print()};document.getElementById('csv').onclick=()=>{const d=new Date(),z=n=>String(n).padStart(2,'0');const fecha=`${d.getFullYear()}-${z(d.getMonth()+1)}-${z(d.getDate())}`,hora=`${z(d.getHours())}:${z(d.getMinutes())}`;const MOT={unjustified:'No justificado',justified:'Justificado',home:'En casa'},EST={present:'Presente',late:'Llegó tarde',absent:'Ausente',course:'En un curso',pending:'Pendiente'};const c=v=>{v=String(v??'');return /[;"\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};const filas=[['Fecha','Hora del pase','Planta','Habitación','Curso','Nombre','Estado','Motivo ausencia','Hora de llegada']];const ids=Object.keys(data).filter(r=>floor==='all'||(floor==='1'?r.startsWith('2'):r.startsWith('3'))).sort();for(const r of ids){const room=data[r];for(const p of room.people){if(!p)continue;const k=r+'|'+p.name,st=states[k]||'pending';filas.push([fecha,hora,r.startsWith('2')?'1.ª planta':'2.ª planta',r,room.course,p.name,EST[st],st==='absent'?MOT[absenceReasons[k]||'unjustified']:'',st==='late'?(lateTimes[k]||''):''])}}const txt='﻿'+filas.map(f=>f.map(c).join(';')).join('\r\n')+'\r\n';const nom=`pase_${fecha}_${hora.replace(':','')}_${floor==='all'?'todas':floor==='1'?'planta1':'planta2'}.csv`;const url=URL.createObjectURL(new Blob([txt],{type:'text/csv;charset=utf-8'}));const a=document.createElement('a');a.href=url;a.download=nom;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000)};window.addEventListener('afterprint',()=>document.body.classList.remove('print-absent'));
-function pintarDatos(){const n=Object.values(data).reduce((a,h)=>a+h.people.filter(Boolean).length,0);document.getElementById('datos').innerHTML=`<div>Residentes guardados en este móvil: <b>${n}</b> en ${Object.keys(data).length} habitaciones${cargado?' · cargados el '+new Date(cargado).toLocaleDateString('es-ES'):''}.</div><div class="row"><button class="action" data-act="cargar">Cambiar archivo de residentes</button><button class="action danger" data-act="borrar">Borrar residentes de este móvil</button></div>`}
-async function cargarArchivo(f){const msg=document.getElementById('msgVacio');msg.hidden=true;try{const d=JSON.parse(await f.text());if(!d||d.tipo!=='habitaciones-santa-espina'||!Array.isArray(d.habitaciones))throw 0;d.cargado=Date.now();await dbSet('datos',d);aplicar(d);render();alert('Residentes cargados: '+d.habitaciones.reduce((a,h)=>a+h.people.filter(Boolean).length,0)+' personas.')}catch(e){const t='Ese archivo no es el de residentes por habitaciones. Elige residentes-habitaciones.json.';if(Object.keys(data).length)alert(t);else{msg.textContent=t;msg.hidden=false}}}
-document.addEventListener('click',async e=>{const b=e.target.closest('[data-act]');if(!b)return;if(b.dataset.act==='cargar')document.getElementById('fichero').click();if(b.dataset.act==='borrar'&&confirm('¿Borrar los residentes y sus fotos de este móvil? Tendrás que volver a cargar el archivo para usar la app.')){await dbDel('datos');data={};cargado=null;render()}});
-document.getElementById('fichero').addEventListener('change',e=>{const f=e.target.files[0];if(f)cargarArchivo(f);e.target.value=''});
-(async()=>{try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist()}catch(e){}try{const d=await dbGet('datos');if(d)aplicar(d)}catch(e){}render()})();if('serviceWorker' in navigator && location.protocol.startsWith('http'))window.addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js').catch(()=>{}));</script></body></html>
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Pasar Lista</title>
+<meta name="theme-color" content="#18243a">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Pasar Lista">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#f4f6fa;color:#172033;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding-bottom:env(safe-area-inset-bottom,0px)}
+header{background:#18243a;color:#fff;padding:calc(16px + env(safe-area-inset-top,0px)) 16px 16px}
+header .top{display:flex;align-items:center;gap:10px}
+h1{margin:0;font-size:1.4rem}
+header p{margin:6px 0 0;color:#d4dbea;font-size:.9rem;line-height:1.4}
+.back{font:inherit;font-size:.9rem;background:#ffffff1f;color:#fff;border:1px solid #ffffff40;border-radius:9px;padding:7px 11px;cursor:pointer}
+main{max-width:1100px;margin:auto;padding:14px}
+.tabs,.filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.tab,.action{font:inherit;cursor:pointer;border:1px solid #cbd3e1;background:#fff;border-radius:10px;padding:10px 13px;color:#172033}
+.tab.active{background:#243957;color:#fff;border-color:#243957}
+.action.primary{background:#243957;color:#fff;border-color:#243957;font-weight:600}
+.action.send{background:#1f7a52;color:#fff;border-color:#1f7a52;font-weight:700}
+.action.danger{color:#b42318;border-color:#e6b4b4}
+.action:disabled{opacity:.5;cursor:default}
+.filters input{font:inherit;padding:11px;border:1px solid #cbd3e1;border-radius:10px;flex:1;min-width:180px}
+.summary{background:#fff;border:1px solid #e0e5ed;border-radius:12px;padding:12px;margin-bottom:14px}
+.summary .tt{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:baseline}
+.chipsum{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.chipsum span{font-size:.82rem;border-radius:20px;padding:4px 10px;background:#eef1f6}
+.chipsum .p{background:#e3f4ea;color:#187247}.chipsum .t{background:#fdebd9;color:#a14a08}.chipsum .a{background:#fde4e4;color:#b42318}.chipsum .c{background:#fbf1d6;color:#7a5900}
+.progress{height:7px;background:#e6eaf0;border-radius:8px;overflow:hidden;width:100%;margin-top:9px}
+.bar{height:100%;background:#2d8a63;width:0}
+.groups{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}
+.group{background:#fff;border:1px solid #dce2eb;border-radius:14px;padding:13px}
+.grouphead{display:flex;justify-content:space-between;gap:8px;align-items:baseline;margin-bottom:10px}
+.grouphead h2{font-size:1.05rem;margin:0}
+.grouphead span{font-size:.78rem;color:#667085;text-align:right}
+.people{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+.person-wrap{min-width:0;display:flex;flex-direction:column;gap:4px}
+.person{min-width:0;width:100%;border:1px solid #d9e0ea;border-radius:10px;padding:7px 4px;background:#fff;cursor:pointer;text-align:center;color:#172033;font:inherit}
+.person img,.person .ph{width:100%;height:88px;object-fit:contain;display:block;background:#f6f7f9;border-radius:6px;margin-bottom:5px}
+.person .ph{display:grid;place-items:center;font-size:1.6rem;font-weight:700;color:#8a94a6}
+.person .name{font-size:.75rem;font-weight:650;line-height:1.15;display:block;overflow-wrap:anywhere;min-height:2.2em}
+.person .room{font-size:.66rem;color:#8a94a6;display:block;margin-top:2px}
+.person .status{font-size:.7rem;display:block;margin-top:4px;color:#667085}
+.person.present{border-color:#62ad88;background:#effaf4}.person.present .status{color:#187247}
+.person.late{border-color:#e08a3c;background:#fff4ea}.person.late .status{color:#b4520b;font-weight:600}
+.person.absent{border-color:#d98989;background:#fff0f0}.person.absent .status{color:#b42318}
+.person.course{border-color:#d6b45b;background:#fff9e8}.person.course .status{color:#8a6500}
+.absence-reason{width:100%;font:inherit;font-size:.68rem;border:1px solid #d98989;border-radius:7px;padding:5px 2px;background:#fff;color:#7f1d1d}
+.late-time{width:100%;font:inherit;font-size:.72rem;border:1px solid #e08a3c;border-radius:7px;padding:4px 2px;background:#fff;color:#7a3a07;text-align:center}
+.print-label{display:none;font-size:.68rem;font-weight:700;margin-top:3px;color:#8b1e1e}
+.vacant{border:1px dashed #e0e5ed;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#b5bdca;font-size:.75rem;min-height:130px}
+.sendbox{margin:18px 0 6px;background:#fff;border:1px solid #cfe5d9;border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:8px}
+.sendbox .action.send{padding:14px;font-size:1.02rem}
+.small{font-size:.83rem;color:#5b667a;line-height:1.4}
+.ok{color:#187247;font-weight:600}.bad{color:#b42318;font-weight:600}
+.card{background:#fff;border:1px solid #e0e5ed;border-radius:14px;padding:14px;margin-top:14px}
+.card h3{margin:0 0 8px;font-size:1rem}
+.home-btns{display:flex;flex-direction:column;gap:12px;margin-top:4px}
+.hb{display:flex;align-items:center;gap:14px;text-align:left;font:inherit;background:#fff;border:1px solid #d5dce8;border-left:6px solid #243957;border-radius:16px;padding:18px 16px;cursor:pointer;color:#172033}
+.hb.cas{border-left-color:#2e6b5e}
+.hb .ic{width:46px;height:46px;border-radius:12px;display:grid;place-items:center;background:#e8edf6;color:#243957;flex:none}
+.hb.cas .ic{background:#e2f0ec;color:#2e6b5e}
+.hb b{display:block;font-size:1.15rem}.hb .s{font-size:.85rem;color:#5b667a}.hb .go{margin-left:auto;font-size:1.6rem;color:#9aa4b5}
+.field{display:flex;flex-direction:column;gap:4px;margin-bottom:10px}
+.field label{font-size:.8rem;font-weight:600;color:#4a5568}
+.field input{font:inherit;padding:10px;border:1px solid #cbd3e1;border-radius:10px}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.hist{list-style:none;margin:0;padding:0}.hist li{padding:8px 0;border-bottom:1px solid #edf0f5;font-size:.85rem}.hist li:last-child{border:0}
+.toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:#172033;color:#fff;padding:11px 16px;border-radius:12px;font-size:.9rem;z-index:50;max-width:92vw;box-shadow:0 6px 20px #0004}
+@media(max-width:520px){header{padding-left:12px;padding-right:12px}main{padding:10px}.groups{grid-template-columns:1fr}.person img,.person .ph{height:clamp(72px,23vw,110px)}.tab,.action{padding:10px 9px;font-size:.86rem}}
+@media print{header{background:#fff;color:#000;padding:0 0 10px}header p,.back{display:none}.tabs,.filters,.sendbox,.no-print,.toast{display:none!important}main{padding:0}.groups{grid-template-columns:repeat(2,1fr)}.group,.person-wrap,.vacant{break-inside:avoid}
+body.print-absent .summary,body.print-absent .person-wrap:not(.print-me),body.print-absent .vacant,body.print-absent .group:not(:has(.print-me)){display:none!important}
+body.print-absent .absence-reason,body.print-absent .late-time{display:none!important}body.print-absent .print-label{display:block!important}
+body.print-absent header h1:after{content:" — AUSENTES NO JUSTIFICADOS Y TARDES"}}
+</style>
+</head>
+<body>
+<header><div class="top"><button class="back" data-act="inicio" id="btnBack" hidden>‹ Inicio</button><h1 id="titulo">Pasar Lista</h1></div><p id="sub"></p></header>
+<main id="main"></main>
+<input type="file" id="fichero" accept=".json,application/json" hidden>
+<div class="toast" id="toast" hidden></div>
+<script>
+"use strict";
+/* ---------- residentes guardados en el móvil (IndexedDB) ---------- */
+const DBN='pasarListaHabitaciones', ST='kv';
+function idb(){return new Promise((ok,ko)=>{const r=indexedDB.open(DBN,1);r.onupgradeneeded=()=>r.result.createObjectStore(ST);r.onsuccess=()=>ok(r.result);r.onerror=()=>ko(r.error);});}
+async function dbGet(k){const d=await idb();return new Promise((ok,ko)=>{const r=d.transaction(ST).objectStore(ST).get(k);r.onsuccess=()=>ok(r.result);r.onerror=()=>ko(r.error);});}
+async function dbSet(k,v){const d=await idb();return new Promise((ok,ko)=>{const t=d.transaction(ST,'readwrite');t.objectStore(ST).put(v,k);t.oncomplete=()=>ok();t.onerror=()=>ko(t.error);});}
+async function dbDel(k){const d=await idb();return new Promise((ok,ko)=>{const t=d.transaction(ST,'readwrite');t.objectStore(ST).delete(k);t.oncomplete=()=>ok();t.onerror=()=>ko(t.error);});}
+
+/* ---------- estado en localStorage ---------- */
+const LS={get(k,d){try{const v=JSON.parse(localStorage.getItem(k)||'null');return v??d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+const K={hab:['attendanceRoomStates','attendanceAbsenceReasons','attendanceLateTimes'],cas:['casas_states','casas_reasons','casas_late']};
+const S={};for(const m of ['hab','cas'])S[m]={states:LS.get(K[m][0],{}),reasons:LS.get(K[m][1],{}),late:LS.get(K[m][2],{})};
+function guardarEstado(m){LS.set(K[m][0],S[m].states);LS.set(K[m][1],S[m].reasons);LS.set(K[m][2],S[m].late);}
+let H=null, C=null;                       // {habitaciones,cargado} · {casas,cargado}
+const UI={modo:LS.get('pl_modo',null),tab:{hab:LS.get('pl_tab_hab','1'),cas:LS.get('pl_tab_cas','0')},q:''};
+const ENV=LS.get('pl_envio',{url:'',clave:'',movil:''});
+let COLA=LS.get('pl_cola',[]), HIST=LS.get('pl_hist',[]);
+const guardarEnvio=()=>{LS.set('pl_envio',ENV);LS.set('pl_cola',COLA);LS.set('pl_hist',HIST);};
+
+const MOT={unjustified:'No justificado',justified:'Justificado',home:'En casa'};
+const EST={present:'Presente',late:'Llegó tarde',absent:'Ausente',course:'En un curso',pending:'Pendiente'};
+const norm=s=>String(s).normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const corto=c=>String(c).replace(/^Casa\s+/,'').replace('San Juan Bautista de la Salle','La Salle').replace('San Juan Pablo II','Juan Pablo II');
+const iniciales=n=>n.split(/\s+/).filter(Boolean).slice(0,2).map(w=>w[0]).join('').toUpperCase();
+const ahora=()=>new Date().toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'});
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+function toast(t){const e=document.getElementById('toast');e.textContent=t;e.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>e.hidden=true,3200);}
+
+/* ---------- listas ---------- */
+const PLANTA=r=>String(r).startsWith('2')?'1':String(r).startsWith('3')?'2':'otra';
+function pestanas(m){
+  if(m==='hab') return [['1','1.ª planta · 201–212'],['2','2.ª planta · 301–312'],['all','Todas']];
+  return C.casas.map((c,i)=>[String(i),corto(c.casa)]).concat([['all','Todas']]);
+}
+function ambito(m,t){
+  if(m==='hab') return t==='all'?'Todas las habitaciones':t==='1'?'1.ª planta':'2.ª planta';
+  return t==='all'?'Todas las casas':(C.casas[+t]||{}).casa||'';
+}
+function grupos(m,t){
+  if(m==='hab'){
+    return H.habitaciones.filter(r=>t==='all'||PLANTA(r.habitacion)===t).map(r=>({h2:'Habitación '+r.habitacion,sub:r.curso||'',
+      slots:r.people.map(p=>p?{key:r.habitacion+'|'+p.name,name:p.name,photo:p.photo,hab:String(r.habitacion),curso:r.curso||'',grupo:(PLANTA(r.habitacion)==='1'?'1.ª planta':'2.ª planta')}:null)}));
+  }
+  const out=[];
+  C.casas.forEach((c,i)=>{ if(t!=='all'&&String(i)!==t) return;
+    const gs=[]; c.people.forEach(p=>{const k=t==='all'?corto(c.casa):(p.curso||'Sin curso');let g=gs.find(x=>x.k===k);if(!g){g={k,ps:[]};gs.push(g);}g.ps.push(p);});
+    gs.forEach(g=>out.push({h2:g.k,sub:`${g.ps.length} ${g.ps.length===1?'persona':'personas'}`,
+      slots:g.ps.map(p=>({key:c.casa+'|'+p.name,name:p.name,photo:p.photo,hab:p.habitacion||'',curso:p.curso||'',grupo:c.casa}))}));
+  });
+  return out;
+}
+function contar(m,t){
+  const r={total:0,presentes:0,tarde:0,ausentes:0,nojust:0,just:0,casa:0,curso:0,pendientes:0};
+  for(const g of grupos(m,t)) for(const p of g.slots){ if(!p) continue; r.total++;
+    const s=S[m].states[p.key]||'pending';
+    if(s==='present')r.presentes++;else if(s==='late')r.tarde++;else if(s==='course')r.curso++;
+    else if(s==='absent'){r.ausentes++;const mo=S[m].reasons[p.key]||'unjustified';if(mo==='justified')r.just++;else if(mo==='home')r.casa++;else r.nojust++;}
+    else r.pendientes++; }
+  return r;
+}
+
+/* ---------- pantallas ---------- */
+function render(){
+  const m=UI.modo&&((UI.modo==='hab'&&H)||(UI.modo==='cas'&&C))?UI.modo:null;
+  UI.modo=m; LS.set('pl_modo',m);
+  document.getElementById('btnBack').hidden=!m;
+  if(!m) return renderInicio();
+  renderLista(m);
+}
+function renderInicio(){
+  document.getElementById('titulo').textContent='Pasar Lista';
+  document.getElementById('sub').textContent='Monasterio La Santa Espina · elige cómo vas a pasar lista.';
+  const nH=H?H.habitaciones.reduce((a,h)=>a+h.people.filter(Boolean).length,0):0, nC=C?C.casas.reduce((a,c)=>a+c.people.length,0):0;
+  const pend=COLA.length;
+  let h=`<div class="home-btns">
+    <button class="hb" data-abrir="hab"><span class="ic"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V5a1 1 0 0 1 1-1h9a1 1 0 0 1 1 1v15"/><path d="M15 9h4a1 1 0 0 1 1 1v10"/><path d="M2 20h20"/><circle cx="12" cy="13" r=".8" fill="currentColor"/></svg></span>
+      <span><b>Por habitaciones</b><span class="s">${H?`${nH} residentes · ${H.habitaciones.length} habitaciones`:'Sin residentes: toca para cargar el archivo'}</span></span><span class="go">›</span></button>
+    <button class="hb cas" data-abrir="cas"><span class="ic"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11 12 4l9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-5h4v5"/></svg></span>
+      <span><b>Por casas</b><span class="s">${C?`${nC} residentes · ${C.casas.length} casas`:'Sin residentes: toca para cargar el archivo'}</span></span><span class="go">›</span></button>
+  </div>`;
+  // últimos envíos
+  h+=`<div class="card"><h3>Pases enviados por correo</h3>`;
+  if(pend) h+=`<p class="small bad">${pend} ${pend===1?'pase pendiente':'pases pendientes'} de enviar. Se mandarán solos en cuanto haya internet.</p><div class="row" style="margin-bottom:8px"><button class="action" data-act="reintentar">Enviar ahora</button></div>`;
+  if(HIST.length) h+='<ul class="hist">'+HIST.slice(0,6).map(x=>`<li><b>${new Date(x.fecha).toLocaleString('es-ES',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</b> · ${esc(x.lista)} · ${esc(x.ambito)}<br><span class="small">${x.presentes} presentes · ${x.ausentes} ausentes · ${x.tarde} tarde — ${x.enviado?'<span class="ok">enviado ✓</span>':'<span class="bad">pendiente</span>'}</span></li>`).join('')+'</ul>';
+  else h+=`<p class="small">Cuando termines un pase, pulsa <b>Enviar pase por correo</b> y llegará un Excel con los ausentes y los totales a c.pardo@educatioservanda.org.</p>`;
+  h+=`</div>`;
+  // configuración del envío
+  const on=ENV.url&&ENV.clave;
+  h+=`<div class="card" id="cfg"><h3>Envío por correo ${on?'<span class="ok">· activado</span>':'<span class="bad">· sin configurar</span>'}</h3>
+    ${on?'':'<p class="small">Abre en este móvil el enlace de configuración que te ha pasado el responsable, o pega aquí la dirección y la clave.</p>'}
+    <div class="field"><label for="env_movil">Nombre de este móvil</label><input id="env_movil" value="${esc(ENV.movil)}" placeholder="Ej. Móvil de guardia"></div>
+    <div class="field"><label for="env_url">Dirección del servicio</label><input id="env_url" value="${esc(ENV.url)}" placeholder="https://script.google.com/macros/s/…/exec" autocomplete="off"></div>
+    <div class="field"><label for="env_clave">Clave</label><input id="env_clave" value="${esc(ENV.clave)}" autocomplete="off"></div>
+    <div class="row"><button class="action primary" data-act="probar">Guardar y probar conexión</button></div><p class="small" id="envRes"></p></div>`;
+  // datos
+  h+=`<div class="card"><h3>Residentes en este móvil</h3><p class="small">Los nombres y fotos no están en internet: se cargan desde el archivo privado <b>residentes-santa-espina.json</b> y se quedan solo en este móvil.${H&&H.cargado?` Habitaciones cargadas el ${new Date(H.cargado).toLocaleDateString('es-ES')}.`:''}${C&&C.cargado?` Casas cargadas el ${new Date(C.cargado).toLocaleDateString('es-ES')}.`:''}</p>
+    <div class="row"><button class="action primary" data-act="cargar">${H||C?'Cambiar archivo de residentes':'Cargar residentes'}</button>${H||C?'<button class="action danger" data-act="borrar">Borrar residentes de este móvil</button>':''}</div></div>`;
+  document.getElementById('main').innerHTML=h;
+}
+function renderLista(m){
+  const tabs=pestanas(m); let t=UI.tab[m]; if(!tabs.some(x=>x[0]===t)) t=UI.tab[m]=tabs[0][0];
+  document.getElementById('titulo').textContent=m==='hab'?'Lista por habitaciones':'Lista por casas';
+  document.getElementById('sub').textContent='Toca cada tarjeta: presente → llegó tarde → ausente → en un curso → pendiente.';
+  const q=norm(UI.q.trim()), st=S[m];
+  let html='';
+  for(const g of grupos(m,t)){
+    const slots=g.slots.filter(p=>!q||(p&&norm(p.name+' '+p.hab+' '+p.curso+' '+g.h2).includes(q))||(!p&&norm(g.h2+' '+g.sub).includes(q)));
+    if(q&&!slots.some(Boolean)&&!norm(g.h2+' '+g.sub).includes(q)) continue;
+    const cards=(q&&!norm(g.h2+' '+g.sub).includes(q)?slots:g.slots).map(p=>{
+      if(!p) return '<div class="vacant">Vacante</div>';
+      const s=st.states[p.key]||'pending', mo=st.reasons[p.key]||'unjustified', k=esc(p.key);
+      const imprimir=s==='late'||(s==='absent'&&mo==='unjustified');
+      return `<div class="person-wrap${imprimir?' print-me':''}"><button class="person ${s}" data-key="${k}">
+        ${p.photo?`<img src="${p.photo}" alt="Foto de ${esc(p.name)}" loading="lazy">`:`<span class="ph">${esc(iniciales(p.name))}</span>`}
+        <span class="name">${esc(p.name)}</span>${m==='cas'&&p.hab?`<span class="room">Hab. ${esc(p.hab)}</span>`:''}<span class="status">${EST[s]}</span></button>
+        ${s==='late'?`<input type="time" class="late-time" data-key="${k}" value="${esc(st.late[p.key]||'')}" aria-label="Hora de llegada de ${esc(p.name)}"><span class="print-label">Llegó a las ${esc(st.late[p.key]||'—')}</span>`:''}
+        ${s==='absent'?`<select class="absence-reason" data-key="${k}" aria-label="Motivo de ausencia de ${esc(p.name)}">${Object.entries(MOT).map(([v,x])=>`<option value="${v}"${mo===v?' selected':''}>${x}</option>`).join('')}</select><span class="print-label">${MOT[mo]}</span>`:''}</div>`;
+    }).join('');
+    html+=`<section class="group"><div class="grouphead"><h2>${esc(g.h2)}</h2><span>${esc(g.sub)}</span></div><div class="people">${cards}</div></section>`;
+  }
+  const r=contar(m,t), hechos=r.total-r.pendientes;
+  document.getElementById('main').innerHTML=`
+    <div class="tabs">${tabs.map(([v,x])=>`<button class="tab${v===t?' active':''}" data-tab="${v}">${esc(x)}</button>`).join('')}</div>
+    <div class="filters"><input id="search" placeholder="Buscar nombre, curso o habitación…" value="${esc(UI.q)}" autocomplete="off">
+      <button class="action" data-act="reset">${t==='all'?'Reiniciar todo':'Reiniciar'}</button>
+      <button class="action" data-act="csv">Descargar para Excel</button>
+      <button class="action" data-act="print">Imprimir no justificados y tardes</button></div>
+    <div class="summary"><div class="tt"><strong>${esc(ambito(m,t))}</strong><span>${hechos}/${r.total} pasados</span></div>
+      <div class="chipsum"><span class="p">${r.presentes} presentes</span><span class="t">${r.tarde} tarde</span><span class="a">${r.ausentes} ausentes</span><span class="c">${r.curso} en un curso</span><span>${r.pendientes} pendientes</span></div>
+      <div class="progress"><div class="bar" style="width:${r.total?hechos/r.total*100:0}%"></div></div></div>
+    <div class="groups">${html||'<p>No hay coincidencias.</p>'}</div>
+    <div class="sendbox no-print"><button class="action send" data-act="enviar">Enviar pase por correo</button>
+      <span class="small">Manda a c.pardo@educatioservanda.org un Excel con los ausentes, los que llegaron tarde y el total de presentes y ausentes de <b>${esc(ambito(m,t))}</b>.${ENV.url&&ENV.clave?'':' <span class="bad">Antes hay que configurar el envío en la pantalla de inicio.</span>'}</span></div>`;
+  const s=document.getElementById('search'); if(UI.foco){s.focus();s.setSelectionRange(s.value.length,s.value.length);UI.foco=false;}
+}
+
+/* ---------- pase: Excel (CSV) y envío ---------- */
+function construirPase(){
+  const m=UI.modo,t=UI.tab[m],st=S[m],filas=[];
+  for(const g of grupos(m,t)) for(const p of g.slots){ if(!p) continue; const s=st.states[p.key]||'pending';
+    if(s==='absent'||s==='late'||s==='pending') filas.push({grupo:m==='hab'?g.h2:corto(p.grupo),hab:p.hab,curso:p.curso,nombre:p.name,estado:EST[s],motivo:s==='absent'?MOT[st.reasons[p.key]||'unjustified']:'',hora:s==='late'?(st.late[p.key]||''):''}); }
+  return {id:uid()+uid(),lista:m==='hab'?'Habitaciones':'Casas',ambito:ambito(m,t),fecha:Date.now(),totales:contar(m,t),filas};
+}
+function descargarCSV(){
+  const m=UI.modo,t=UI.tab[m],st=S[m],d=new Date(),z=n=>String(n).padStart(2,'0');
+  const fecha=`${d.getFullYear()}-${z(d.getMonth()+1)}-${z(d.getDate())}`,hora=`${z(d.getHours())}:${z(d.getMinutes())}`;
+  const c=v=>{v=String(v??'');return /[;"\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};
+  const filas=[['Fecha','Hora del pase',m==='hab'?'Planta':'Casa','Habitación','Curso','Nombre','Estado','Motivo ausencia','Hora de llegada']];
+  for(const g of grupos(m,t)) for(const p of g.slots){ if(!p) continue; const s=st.states[p.key]||'pending';
+    filas.push([fecha,hora,m==='hab'?p.grupo:corto(p.grupo),p.hab,p.curso,p.name,EST[s],s==='absent'?MOT[st.reasons[p.key]||'unjustified']:'',s==='late'?(st.late[p.key]||''):'']); }
+  const txt='﻿'+filas.map(f=>f.map(c).join(';')).join('\r\n')+'\r\n';
+  const sufijo=m==='hab'?(t==='all'?'habitaciones':'planta'+t):(t==='all'?'casas':norm(corto(C.casas[+t].casa)).replace(/[^a-z0-9]+/g,'-'));
+  const url=URL.createObjectURL(new Blob([txt],{type:'text/csv;charset=utf-8'}));
+  const a=document.createElement('a');a.href=url;a.download=`pase_${fecha}_${hora.replace(':','')}_${sufijo}.csv`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);
+}
+let enviando=false;
+async function post(cuerpo){
+  const r=await fetch(ENV.url.trim(),{method:'POST',body:JSON.stringify(Object.assign({clave:ENV.clave.trim(),movil:(ENV.movil||'').trim()||'Sin nombre'},cuerpo))});
+  return r.json();
+}
+async function enviarCola(){
+  if(enviando||!COLA.length||!ENV.url||!ENV.clave||navigator.onLine===false) return;
+  enviando=true; let n=0;
+  try{
+    while(COLA.length){
+      const it=COLA[0]; let res;
+      try{ res=await post({tipo:'pase',id:it.id,pase:it}); }catch(e){ break; }
+      if(res&&res.ok){ COLA.shift(); const h=HIST.find(x=>x.id===it.id); if(h) h.enviado=true; n++; guardarEnvio(); }
+      else { toast(res&&res.error==='clave'?'La clave del envío no es correcta. Revísala en Inicio.':'El servicio de correo ha dado un error. Se reintentará.'); break; }
+    }
+  } finally { enviando=false; if(n) toast(n===1?'Pase enviado por correo ✓':`${n} pases enviados por correo ✓`); if(!UI.modo) render(); }
+}
+function enviarPase(){
+  if(!ENV.url||!ENV.clave){ toast('Primero configura el envío en la pantalla de inicio.'); return; }
+  const p=construirPase(), T=p.totales;
+  if(T.pendientes&&!confirm(`Quedan ${T.pendientes} sin pasar. Se enviarán como «Pendiente». ¿Enviar igualmente?`)) return;
+  if(!confirm(`¿Enviar el pase de ${p.ambito}?\n\n${T.presentes+T.tarde} presentes (${T.tarde} tarde)\n${T.ausentes} ausentes (${T.nojust} no justificados)\n${T.curso} en un curso`)) return;
+  COLA.push(p); HIST.unshift({id:p.id,fecha:p.fecha,lista:p.lista,ambito:p.ambito,presentes:T.presentes+T.tarde,ausentes:T.ausentes,tarde:T.tarde,enviado:false}); HIST=HIST.slice(0,20); guardarEnvio();
+  if(navigator.onLine===false) toast('Sin internet: el pase se enviará solo cuando haya conexión.'); else toast('Enviando pase…');
+  enviarCola();
+}
+async function probar(){
+  ['movil','url','clave'].forEach(k=>{const e=document.getElementById('env_'+k); if(e) ENV[k]=e.value.trim();}); guardarEnvio();
+  const box=document.getElementById('envRes');
+  if(!ENV.url||!ENV.clave){ box.className='small bad'; box.textContent='Pega la dirección y la clave.'; return; }
+  box.className='small'; box.textContent='Probando…';
+  try{ const r=await post({prueba:true});
+    if(r&&r.ok){ box.className='small ok'; box.textContent='Conexión correcta. Los pases se enviarán por correo.'; enviarCola(); }
+    else { box.className='small bad'; box.textContent=r&&r.error==='clave'?'La clave no es correcta.':'El servicio ha respondido con un error.'; }
+  }catch(e){ box.className='small bad'; box.textContent='No se pudo conectar. Revisa la dirección y que haya internet.'; }
+}
+
+/* ---------- carga del archivo de residentes ---------- */
+async function cargarArchivo(f){
+  try{
+    const d=JSON.parse(await f.text()), ts=Date.now(); let nH=0,nC=0;
+    const hab=d&&(d.tipo==='pasar-lista-santa-espina'||d.tipo==='habitaciones-santa-espina')&&Array.isArray(d.habitaciones)?d.habitaciones:null;
+    const cas=d&&(d.tipo==='pasar-lista-santa-espina'||d.tipo==='casas-santa-espina')&&Array.isArray(d.casas)?d.casas:null;
+    if(!hab&&!cas) throw new Error('formato');
+    if(hab){ H={tipo:'habitaciones-santa-espina',habitaciones:hab,cargado:ts}; await dbSet('datos',H); nH=hab.reduce((a,h)=>a+h.people.filter(Boolean).length,0); }
+    if(cas){ C={tipo:'casas-santa-espina',casas:cas,cargado:ts}; await dbSet('casas',C); nC=cas.reduce((a,c)=>a+c.people.length,0); }
+    render();
+    alert('Residentes cargados.'+(nH?`\nHabitaciones: ${nH} personas.`:'')+(nC?`\nCasas: ${nC} personas.`:''));
+  }catch(e){ alert('Ese archivo no es el de residentes. Elige residentes-santa-espina.json.'); }
+}
+function abrir(m){
+  if((m==='hab'&&!H)||(m==='cas'&&!C)){ alert('Primero hay que cargar el archivo residentes-santa-espina.json que te ha pasado el responsable.'); document.getElementById('fichero').click(); return; }
+  UI.modo=m; UI.q=''; render(); window.scrollTo(0,0);
+}
+
+/* ---------- eventos ---------- */
+document.addEventListener('click',async e=>{
+  const b=e.target.closest('button'); if(!b) return;
+  if(b.dataset.abrir){ abrir(b.dataset.abrir); return; }
+  if(b.dataset.tab!=null){ UI.tab[UI.modo]=b.dataset.tab; LS.set('pl_tab_'+UI.modo,b.dataset.tab); render(); window.scrollTo(0,0); return; }
+  if(b.classList.contains('person')){
+    const m=UI.modo,k=b.dataset.key,st=S[m],s=st.states[k]||'pending';
+    const nx={pending:'present',present:'late',late:'absent',absent:'course',course:'pending'}[s];
+    if(nx==='pending') delete st.states[k]; else st.states[k]=nx;
+    if(nx==='late') st.late[k]=ahora(); else delete st.late[k];
+    if(nx!=='absent') delete st.reasons[k];
+    guardarEstado(m); render(); return;
+  }
+  const a=b.dataset.act; if(!a) return;
+  if(a==='inicio'){ UI.modo=null; render(); window.scrollTo(0,0); }
+  if(a==='cargar') document.getElementById('fichero').click();
+  if(a==='probar') probar();
+  if(a==='reintentar') enviarCola();
+  if(a==='enviar') enviarPase();
+  if(a==='csv') descargarCSV();
+  if(a==='print'){ document.body.classList.add('print-absent'); window.print(); }
+  if(a==='reset'){
+    const m=UI.modo,t=UI.tab[m]; if(!confirm(`¿Reiniciar el pase de ${ambito(m,t)}?`)) return;
+    const keys=new Set(); grupos(m,t).forEach(g=>g.slots.forEach(p=>p&&keys.add(p.key)));
+    for(const o of [S[m].states,S[m].reasons,S[m].late]) for(const k of Object.keys(o)) if(keys.has(k)) delete o[k];
+    guardarEstado(m); render();
+  }
+  if(a==='borrar'&&confirm('¿Borrar los residentes y sus fotos de este móvil? Tendrás que volver a cargar el archivo para usar la app.')){
+    await dbDel('datos'); await dbDel('casas'); H=null; C=null; render();
+  }
+});
+document.addEventListener('change',e=>{
+  const el=e.target, m=UI.modo;
+  if(el.classList.contains('absence-reason')){ S[m].reasons[el.dataset.key]=el.value; guardarEstado(m); render(); }
+  if(el.classList.contains('late-time')){ S[m].late[el.dataset.key]=el.value; guardarEstado(m); render(); }
+  if(el.id==='fichero'&&el.files[0]){ cargarArchivo(el.files[0]); el.value=''; }
+});
+document.addEventListener('input',e=>{ if(e.target.id==='search'){ UI.q=e.target.value; UI.foco=true; render(); } });
+window.addEventListener('afterprint',()=>document.body.classList.remove('print-absent'));
+window.addEventListener('online',enviarCola);
+setInterval(enviarCola,60000);
+
+/* enlace de configuración: ?conectar=… */
+(function(){ try{ const c=new URLSearchParams(location.search).get('conectar'); if(!c) return;
+  const b=c.replace(/-/g,'+').replace(/_/g,'/'), j=JSON.parse(decodeURIComponent(escape(atob(b+'==='.slice((b.length+3)%4)))));
+  if(!j.u||!j.k) return; ENV.url=j.u; ENV.clave=j.k; guardarEnvio(); history.replaceState(null,'',location.pathname); UI.modo=null; UI.conectado=true;
+}catch(e){} })();
+
+(async()=>{
+  try{ if(navigator.storage&&navigator.storage.persist) navigator.storage.persist(); }catch(e){}
+  try{ H=await dbGet('datos')||null; }catch(e){ H=null; }
+  try{ C=await dbGet('casas')||null; }catch(e){ C=null; }
+  render();
+  if(UI.conectado){ const el=document.getElementById('cfg'); if(el){ el.scrollIntoView({block:'start'}); const i=document.getElementById('env_movil'); i&&i.focus(); } toast('Dirección y clave puestas. Escribe el nombre del móvil y pulsa «Guardar y probar».'); }
+  enviarCola();
+})();
+if('serviceWorker' in navigator && location.protocol.startsWith('http')) window.addEventListener('load',()=>navigator.serviceWorker.register('service-worker.js').catch(()=>{}));
+</script>
+</body>
+</html>

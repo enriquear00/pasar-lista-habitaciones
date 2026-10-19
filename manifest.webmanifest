@@ -1,8 +1,8 @@
 {
   "id": "./",
-  "name": "Pasar Lista por Habitaciones",
+  "name": "Pasar Lista · La Santa Espina",
   "short_name": "Pasar Lista",
-  "description": "Lista de asistencia por habitaciones. Los residentes se cargan en el móvil desde un archivo privado.",
+  "description": "Pasar lista por habitaciones o por casas. Los residentes se cargan en el móvil desde un archivo privado.",
   "lang": "es-ES",
   "start_url": "./",
   "scope": "./",
