@@ -71,7 +71,10 @@ main{max-width:1100px;margin:auto;padding:14px}
 .hb b{display:block;font-size:1.15rem}.hb .s{font-size:.85rem;color:#5b667a}.hb .go{margin-left:auto;font-size:1.6rem;color:#9aa4b5}
 .field{display:flex;flex-direction:column;gap:4px;margin-bottom:10px}
 .field label{font-size:.8rem;font-weight:600;color:#4a5568}
-.field input{font:inherit;padding:10px;border:1px solid #cbd3e1;border-radius:10px}
+.field input,.field select,.field textarea{font:inherit;padding:10px;border:1px solid #cbd3e1;border-radius:10px;background:#fff}
+.field textarea{min-height:110px;resize:vertical}
+details.card summary{font-weight:700;cursor:pointer}
+details.card[open] summary{margin-bottom:10px}
 .row{display:flex;gap:8px;flex-wrap:wrap}
 .hist{list-style:none;margin:0;padding:0}.hist li{padding:8px 0;border-bottom:1px solid #edf0f5;font-size:.85rem}.hist li:last-child{border:0}
 .toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:#172033;color:#fff;padding:11px 16px;border-radius:12px;font-size:.9rem;z-index:50;max-width:92vw;box-shadow:0 6px 20px #0004}
@@ -162,7 +165,7 @@ function renderInicio(){
   document.getElementById('titulo').textContent='Pasar Lista';
   document.getElementById('sub').textContent='Monasterio La Santa Espina · elige cómo vas a pasar lista.';
   const nH=H?H.habitaciones.reduce((a,h)=>a+h.people.filter(Boolean).length,0):0, nC=C?C.casas.reduce((a,c)=>a+c.people.length,0):0;
-  const pend=COLA.length;
+  const pend=COLA.filter(x=>!x.obs).length;
   let h=`<div class="home-btns">
     <button class="hb" data-abrir="hab"><span class="ic"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V5a1 1 0 0 1 1-1h9a1 1 0 0 1 1 1v15"/><path d="M15 9h4a1 1 0 0 1 1 1v10"/><path d="M2 20h20"/><circle cx="12" cy="13" r=".8" fill="currentColor"/></svg></span>
       <span><b>Por habitaciones</b><span class="s">${H?`${nH} residentes · ${H.habitaciones.length} habitaciones`:'Sin residentes: toca para cargar el archivo'}</span></span><span class="go">›</span></button>
@@ -183,6 +186,14 @@ function renderInicio(){
     <div class="field"><label for="env_url">Dirección del servicio</label><input id="env_url" value="${esc(ENV.url)}" placeholder="https://script.google.com/macros/s/…/exec" autocomplete="off"></div>
     <div class="field"><label for="env_clave">Clave</label><input id="env_clave" value="${esc(ENV.clave)}" autocomplete="off"></div>
     <div class="row"><button class="action primary" data-act="probar">Guardar y probar conexión</button></div><p class="small" id="envRes"></p></div>`;
+  // sugerencias
+  h+=`<details class="card" ${UI.obsAbierto?'open':''}><summary>Sugerencias y observaciones</summary>
+    <p class="small">¿Algo que cambiar o mejorar en la app, o algún fallo? Escríbelo aquí y le llega por correo a c.pardo@educatioservanda.org.</p>
+    <div class="field"><label for="obsTipo">Tipo</label><select id="obsTipo">${['Cambio o mejora','Algo no funciona','Otra observación'].map(x=>`<option${OBS.tipo===x?' selected':''}>${x}</option>`).join('')}</select></div>
+    <div class="field"><label for="obsTxt">Observación</label><textarea id="obsTxt" placeholder="Ej.: Poner la hora de llegada también a los ausentes">${esc(OBS.texto)}</textarea></div>
+    <div class="field"><label for="obsNom">Tu nombre (opcional)</label><input id="obsNom" value="${esc(OBS.nombre)}"></div>
+    <div class="row"><button class="action primary" data-act="obsEnviar">Enviar observación</button></div>
+    ${COLA.some(x=>x.obs)?'<p class="small">Hay observaciones pendientes: se enviarán en cuanto haya internet.</p>':''}</details>`;
   // datos
   h+=`<div class="card"><h3>Residentes en este móvil</h3><p class="small">Los nombres y fotos no están en internet: se cargan desde el archivo privado <b>residentes-santa-espina.json</b> y se quedan solo en este móvil.${H&&H.cargado?` Habitaciones cargadas el ${new Date(H.cargado).toLocaleDateString('es-ES')}.`:''}${C&&C.cargado?` Casas cargadas el ${new Date(C.cargado).toLocaleDateString('es-ES')}.`:''}</p>
     <div class="row"><button class="action primary" data-act="cargar">${H||C?'Cambiar archivo de residentes':'Cargar residentes'}</button>${H||C?'<button class="action danger" data-act="borrar">Borrar residentes de este móvil</button>':''}</div></div>`;
@@ -255,8 +266,8 @@ async function enviarCola(){
   try{
     while(COLA.length){
       const it=COLA[0]; let res;
-      try{ res=await post({tipo:'pase',id:it.id,pase:it}); }catch(e){ break; }
-      if(res&&res.ok){ COLA.shift(); const h=HIST.find(x=>x.id===it.id); if(h) h.enviado=true; n++; guardarEnvio(); }
+      try{ res=await post(it.obs?{tipo:'observacion',id:it.id,obs:it.obs}:{tipo:'pase',id:it.id,pase:it}); }catch(e){ break; }
+      if(res&&res.ok){ COLA.shift(); const h=HIST.find(x=>x.id===it.id); if(h) h.enviado=true; if(it.obs) toast('Observación enviada. ¡Gracias!'); else n++; guardarEnvio(); }
       else { toast(res&&res.error==='clave'?'La clave del envío no es correcta. Revísala en Inicio.':'El servicio de correo ha dado un error. Se reintentará.'); break; }
     }
   } finally { enviando=false; if(n) toast(n===1?'Pase enviado por correo ✓':`${n} pases enviados por correo ✓`); if(!UI.modo) render(); }
@@ -299,6 +310,17 @@ function abrir(m){
   UI.modo=m; UI.q=''; render(); window.scrollTo(0,0);
 }
 
+/* ---------- sugerencias ---------- */
+const OBS={tipo:'Cambio o mejora',texto:'',nombre:''};
+function enviarObs(){
+  const t=OBS.texto.trim(); if(!t){ toast('Escribe la observación'); return; }
+  if(!ENV.url||!ENV.clave){ toast('Primero configura el envío por correo (más abajo).'); return; }
+  COLA.push({id:uid()+uid(),obs:{app:'Pasar Lista',tipo:OBS.tipo,texto:t.slice(0,3000),nombre:OBS.nombre.trim().slice(0,60),fecha:Date.now()}});
+  OBS.texto=''; UI.obsAbierto=false; guardarEnvio(); render();
+  toast(navigator.onLine===false?'Sin internet: se enviará en cuanto haya conexión':'Enviando observación…'); enviarCola();
+}
+document.addEventListener('toggle',e=>{ if(e.target.tagName==='DETAILS') UI.obsAbierto=e.target.open; },true);
+
 /* ---------- eventos ---------- */
 document.addEventListener('click',async e=>{
   const b=e.target.closest('button'); if(!b) return;
@@ -318,6 +340,7 @@ document.addEventListener('click',async e=>{
   if(a==='probar') probar();
   if(a==='reintentar') enviarCola();
   if(a==='enviar') enviarPase();
+  if(a==='obsEnviar') enviarObs();
   if(a==='csv') descargarCSV();
   if(a==='print'){ document.body.classList.add('print-absent'); window.print(); }
   if(a==='reset'){
@@ -336,7 +359,7 @@ document.addEventListener('change',e=>{
   if(el.classList.contains('late-time')){ S[m].late[el.dataset.key]=el.value; guardarEstado(m); render(); }
   if(el.id==='fichero'&&el.files[0]){ cargarArchivo(el.files[0]); el.value=''; }
 });
-document.addEventListener('input',e=>{ if(e.target.id==='search'){ UI.q=e.target.value; UI.foco=true; render(); } });
+document.addEventListener('input',e=>{ if(e.target.id==='obsTxt') OBS.texto=e.target.value; if(e.target.id==='obsNom') OBS.nombre=e.target.value; if(e.target.id==='obsTipo') OBS.tipo=e.target.value; if(e.target.id==='search'){ UI.q=e.target.value; UI.foco=true; render(); } });
 window.addEventListener('afterprint',()=>document.body.classList.remove('print-absent'));
 window.addEventListener('online',enviarCola);
 setInterval(enviarCola,60000);
