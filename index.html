@@ -60,6 +60,7 @@ main{max-width:1100px;margin:auto;padding:14px}
 .sendbox{margin:18px 0 6px;background:#fff;border:1px solid #cfe5d9;border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:8px}
 .sendbox .action.send{padding:14px;font-size:1.02rem}
 .small{font-size:.95rem;color:#5b667a;line-height:1.4}
+.aviso{background:#fdf1e3;border:1px solid #e3b98a;color:#6e3507;border-radius:12px;padding:12px 14px;margin:0 0 12px;line-height:1.4}
 .ok{color:#187247;font-weight:600}.bad{color:#b42318;font-weight:600}
 .card{background:#fff;border:1px solid #e0e5ed;border-radius:14px;padding:14px;margin-top:14px}
 .card h3{margin:0 0 8px;font-size:1rem}
@@ -107,9 +108,11 @@ async function dbDel(k){const d=await idb();return new Promise((ok,ko)=>{const t
 const LS={get(k,d){try{const v=JSON.parse(localStorage.getItem(k)||'null');return v??d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
 const K={hab:['attendanceRoomStates','attendanceAbsenceReasons','attendanceLateTimes'],cas:['casas_states','casas_reasons','casas_late']};
 const S={};for(const m of ['hab','cas'])S[m]={states:LS.get(K[m][0],{}),reasons:LS.get(K[m][1],{}),late:LS.get(K[m][2],{})};
-function guardarEstado(m){LS.set(K[m][0],S[m].states);LS.set(K[m][1],S[m].reasons);LS.set(K[m][2],S[m].late);}
+function guardarEstado(m){LS.set(K[m][0],S[m].states);LS.set(K[m][1],S[m].reasons);LS.set(K[m][2],S[m].late);LS.set('pl_ts_'+m,Object.keys(S[m].states).length?Date.now():0);}
+const marcasDe=m=>Object.keys(S[m].states).length, tsMarcas=m=>LS.get('pl_ts_'+m,0);
+function marcasViejas(m){ const n=marcasDe(m); if(!n) return false; const ts=tsMarcas(m); return !ts||Date.now()-ts>5*3600e3; }
 let H=null, C=null;                       // {habitaciones,cargado} · {casas,cargado}
-const UI={modo:LS.get('pl_modo',null),tab:{hab:LS.get('pl_tab_hab','1'),cas:LS.get('pl_tab_cas','0')},q:''};
+const UI={sigue:{},modo:LS.get('pl_modo',null),tab:{hab:LS.get('pl_tab_hab','1'),cas:LS.get('pl_tab_cas','0')},q:''};
 const ENV=LS.get('pl_envio',{url:'',clave:'',movil:''});
 let COLA=LS.get('pl_cola',[]), HIST=LS.get('pl_hist',[]);
 const guardarEnvio=()=>{LS.set('pl_envio',ENV);LS.set('pl_cola',COLA);LS.set('pl_hist',HIST);};
@@ -227,7 +230,10 @@ function renderLista(m){
     html+=`<section class="group"><div class="grouphead"><h2>${esc(g.h2)}</h2><span>${esc(g.sub)}</span></div><div class="people">${cards}</div></section>`;
   }
   const r=contar(m,t), hechos=r.total-r.pendientes;
-  document.getElementById('main').innerHTML=`
+  const ts=tsMarcas(m), viejo=marcasViejas(m)&&!UI.sigue[m];
+  const aviso=viejo?`<div class="aviso no-print"><b>Esta lista tiene marcas de un pase anterior${ts?` (${new Date(ts).toLocaleString('es-ES',{weekday:'long',day:'numeric',hour:'2-digit',minute:'2-digit'})})`:''}.</b> Para un pase nuevo, empieza con la lista en blanco.
+      <div class="row" style="margin-top:10px"><button class="action primary" data-act="nuevo">Empezar pase nuevo</button><button class="action" data-act="seguir">Seguir con estas marcas</button></div></div>`:'';
+  document.getElementById('main').innerHTML=aviso+`
     <div class="tabs">${tabs.map(([v,x])=>`<button class="tab${v===t?' active':''}" data-tab="${v}">${esc(x)}</button>`).join('')}</div>
     <div class="filters"><input id="search" placeholder="Buscar nombre, curso o habitación…" value="${esc(UI.q)}" autocomplete="off">
       <button class="action" data-act="reset">${t==='all'?'Reiniciar todo':'Reiniciar'}</button>
@@ -255,7 +261,7 @@ function descargarCSV(){
   const c=v=>{v=String(v??'');return /[;"\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};
   const filas=[['Fecha','Hora del pase',m==='hab'?'Planta':'Casa','Habitación','Curso','Nombre','Estado','Motivo ausencia','Hora de llegada']];
   for(const g of grupos(m,t)) for(const p of g.slots){ if(!p) continue; const s=st.states[p.key]||'pending';
-    filas.push([fecha,hora,m==='hab'?p.grupo:corto(p.grupo),p.hab,p.curso,p.name,EST[s],s==='absent'?MOT[st.reasons[p.key]||'unjustified']:'',s==='late'?(st.late[p.key]||''):'']); }
+    filas.push([fecha,hora,m==='hab'?p.grupo:corto(p.grupo),p.hab,p.curso,p.full||p.name,EST[s],s==='absent'?MOT[st.reasons[p.key]||'unjustified']:'',s==='late'?(st.late[p.key]||''):'']); }
   const txt='﻿'+filas.map(f=>f.map(c).join(';')).join('\r\n')+'\r\n';
   const sufijo=m==='hab'?(t==='all'?'habitaciones':'planta'+t):(t==='all'?'casas':norm(corto(C.casas[+t].casa)).replace(/[^a-z0-9]+/g,'-'));
   const url=URL.createObjectURL(new Blob([txt],{type:'text/csv;charset=utf-8'}));
@@ -263,8 +269,9 @@ function descargarCSV(){
 }
 let enviando=false;
 async function post(cuerpo){
-  const r=await fetch(ENV.url.trim(),{method:'POST',body:JSON.stringify(Object.assign({clave:ENV.clave.trim(),movil:(ENV.movil||'').trim()||'Sin nombre'},cuerpo))});
-  return r.json();
+  const ac=window.AbortController?new AbortController():null, to=ac?setTimeout(()=>ac.abort(),45000):0;
+  try{ const r=await fetch(ENV.url.trim(),{method:'POST',body:JSON.stringify(Object.assign({clave:ENV.clave.trim(),movil:(ENV.movil||'').trim()||'Sin nombre'},cuerpo)),signal:ac?ac.signal:undefined});
+    return await r.json(); } finally { clearTimeout(to); }
 }
 async function enviarCola(){
   if(enviando||!COLA.length||!ENV.url||!ENV.clave||navigator.onLine===false) return;
@@ -274,12 +281,13 @@ async function enviarCola(){
       const it=COLA[0]; let res;
       try{ res=await post(it.obs?{tipo:'observacion',id:it.id,obs:it.obs}:{tipo:'pase',id:it.id,pase:it}); }catch(e){ break; }
       if(res&&res.ok){ COLA.shift(); const h=HIST.find(x=>x.id===it.id); if(h) h.enviado=true; if(it.obs) toast('Observación enviada. ¡Gracias!'); else n++; guardarEnvio(); }
-      else { toast(res&&res.error==='clave'?'La clave del envío no es correcta. Revísala en Inicio.':'El servicio de correo ha dado un error. Se reintentará.'); break; }
+      else { const msg=res&&res.error==='clave'?'La clave del envío no es correcta. Revísala en Inicio.':'El servicio de correo ha dado un error. Se reintentará.'; if(enviarCola.ult!==msg||Date.now()-(enviarCola.t||0)>15*60e3){ toast(msg); enviarCola.ult=msg; enviarCola.t=Date.now(); } break; }
     }
   } finally { enviando=false; if(n) toast(n===1?'Pase enviado por correo ✓':`${n} pases enviados por correo ✓`); if(!UI.modo) render(); }
 }
 function enviarPase(){
   if(!ENV.url||!ENV.clave){ toast('Primero configura el envío en la pantalla de inicio.'); return; }
+  if(marcasViejas(UI.modo)&&!confirm('Las marcas de esta lista son de hace más de 5 horas. ¿Seguro que son del pase de ahora?')) return;
   const p=construirPase(), T=p.totales;
   if(T.pendientes&&!confirm(`Quedan ${T.pendientes} sin pasar. Se enviarán como «Pendiente». ¿Enviar igualmente?`)) return;
   if(!confirm(`¿Enviar el pase de ${p.ambito}?\n\n${T.presentes+T.tarde} presentes (${T.tarde} tarde)\n${T.ausentes} ausentes (${T.nojust} no justificados)\n${T.curso} en un curso`)) return;
@@ -357,6 +365,9 @@ document.addEventListener('click',async e=>{
   if(a==='obsEnviar') enviarObs();
   if(a==='csv') descargarCSV();
   if(a==='print'){ document.body.classList.add('print-absent'); window.print(); }
+  if(a==='seguir'){ UI.sigue[UI.modo]=true; render(); }
+  if(a==='nuevo'){ const m=UI.modo; if(!confirm('¿Dejar toda la lista en blanco para un pase nuevo?')) return;
+    S[m]={states:{},reasons:{},late:{}}; guardarEstado(m); UI.sigue[m]=false; render(); window.scrollTo(0,0); toast('Lista en blanco: puedes empezar el pase'); }
   if(a==='reset'){
     const m=UI.modo,t=UI.tab[m]; if(!confirm(`¿Reiniciar el pase de ${ambito(m,t)}?`)) return;
     const keys=new Set(); grupos(m,t).forEach(g=>g.slots.forEach(p=>p&&keys.add(p.key)));
