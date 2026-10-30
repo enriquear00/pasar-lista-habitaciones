@@ -69,6 +69,17 @@ main{max-width:1100px;margin:auto;padding:14px}
 .hb.cas{border-left-color:#2e6b5e}
 .hb .ic{width:46px;height:46px;border-radius:12px;display:grid;place-items:center;background:#e8edf6;color:#243957;flex:none}
 .hb.cas .ic{background:#e2f0ec;color:#2e6b5e}
+.hb.avi{border-left-color:#a1401f}.hb.avi .ic{background:#fbe9e1;color:#a1401f}
+.avlist{display:flex;flex-direction:column;gap:8px}
+.av-row{display:flex;align-items:center;gap:12px;width:100%;min-height:56px;text-align:left;font:inherit;background:#fff;border:1px solid #d5dce8;border-radius:12px;padding:10px 12px;cursor:pointer;color:#172033}
+.av-row .nm{flex:1;min-width:0}.av-row .nm b{display:block;font-size:1rem}.av-row .nm span{font-size:.88rem;color:#525c6e}
+.av-cnt{text-align:right;white-space:nowrap;font-size:.9rem;color:#525c6e}.av-cnt b{font-size:1.05rem;color:#172033}
+.av-cnt.par b{color:#a1401f}
+.dots{display:inline-flex;gap:4px;margin-top:4px}.dots i{width:12px;height:12px;border-radius:50%;border:2px solid #a1401f;display:inline-block}.dots i.on{background:#a1401f}
+.av-sel{border:2px solid #a1401f;border-radius:14px;background:#fff;padding:14px;margin-bottom:14px}
+.av-sel h2{margin:0 0 4px;font-size:1.2rem}
+.av-hist{list-style:none;margin:10px 0;padding:0}.av-hist li{padding:8px 0;border-bottom:1px solid #edf0f5;font-size:.95rem}.av-hist li:last-child{border:0}
+.pend{color:#a14a08;font-weight:600}
 .hb b{display:block;font-size:1.15rem}.hb .s{font-size:.95rem;color:#525c6e}.hb .go{margin-left:auto;font-size:1.6rem;color:#5b667a}
 .field{display:flex;flex-direction:column;gap:4px;margin-bottom:10px}
 .field label{font-size:.92rem;font-weight:600;color:#4a5568}
@@ -115,6 +126,7 @@ let H=null, C=null;                       // {habitaciones,cargado} · {casas,ca
 const UI={sigue:{},modo:LS.get('pl_modo',null),tab:{hab:LS.get('pl_tab_hab','1'),cas:LS.get('pl_tab_cas','0')},q:''};
 const ENV=LS.get('pl_envio',{url:'',clave:'',movil:''});
 let COLA=LS.get('pl_cola',[]), HIST=LS.get('pl_hist',[]);
+let AV=LS.get('pl_avisos',{lista:[],porParte:3,t:0});
 const guardarEnvio=()=>{LS.set('pl_envio',ENV);LS.set('pl_cola',COLA);LS.set('pl_hist',HIST);};
 
 const MOT={unjustified:'No justificado',justified:'Justificado',home:'En casa'};
@@ -164,10 +176,11 @@ function contar(m,t){
 
 /* ---------- pantallas ---------- */
 function render(){
-  const m=UI.modo&&((UI.modo==='hab'&&H)||(UI.modo==='cas'&&C))?UI.modo:null;
+  const m=UI.modo&&((UI.modo==='hab'&&H)||(UI.modo==='cas'&&C)||(UI.modo==='avi'&&(H||C)))?UI.modo:null;
   UI.modo=m; LS.set('pl_modo',m);
   document.getElementById('btnBack').hidden=!m;
   if(!m) return renderInicio();
+  if(m==='avi') return renderAvisos();
   renderLista(m);
 }
 function renderInicio(){
@@ -180,6 +193,8 @@ function renderInicio(){
       <span><b>Por habitaciones</b><span class="s">${H?`${nH} residentes · ${H.habitaciones.length} habitaciones`:'Sin residentes: toca para cargar el archivo'}</span></span><span class="go">›</span></button>
     <button class="hb cas" data-abrir="cas"><span class="ic"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11 12 4l9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-5h4v5"/></svg></span>
       <span><b>Por casas</b><span class="s">${C?`${nC} residentes · ${C.casas.length} casas`:'Sin residentes: toca para cargar el archivo'}</span></span><span class="go">›</span></button>
+    <button class="hb avi" data-abrir="avi"><span class="ic"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 2 20h20z"/><path d="M12 10v4"/><circle cx="12" cy="17" r=".8" fill="currentColor"/></svg></span>
+      <span><b>Avisos de parte</b><span class="s">${resumenAvisosTxt()}</span></span><span class="go">›</span></button>
   </div>`;
   // últimos envíos
   h+=`<div class="card"><h3>Pases enviados por correo</h3>`;
@@ -279,11 +294,12 @@ async function enviarCola(){
   try{
     while(COLA.length){
       const it=COLA[0]; let res;
-      try{ res=await post(it.obs?{tipo:'observacion',id:it.id,obs:it.obs}:{tipo:'pase',id:it.id,pase:it}); }catch(e){ break; }
-      if(res&&res.ok){ COLA.shift(); const h=HIST.find(x=>x.id===it.id); if(h) h.enviado=true; if(it.obs) toast('Observación enviada. ¡Gracias!'); else n++; guardarEnvio(); }
+      try{ res=await post(it.obs?{tipo:'observacion',id:it.id,obs:it.obs}:it.aviso?{tipo:'aviso',id:it.id,aviso:it.aviso}:it.anular?{tipo:'anularAviso',id:it.id,ref:it.anular}:{tipo:'pase',id:it.id,pase:it}); }catch(e){ break; }
+      if(res&&res.ok){ COLA.shift(); const h=HIST.find(x=>x.id===it.id); if(h) h.enviado=true; if(res.avisos) guardarAvisos(res);
+        if(it.obs) toast('Observación enviada. ¡Gracias!'); else if(!it.aviso&&!it.anular) n++; guardarEnvio(); }
       else { const msg=res&&res.error==='clave'?'La clave del envío no es correcta. Revísala en Inicio.':'El servicio de correo ha dado un error. Se reintentará.'; if(enviarCola.ult!==msg||Date.now()-(enviarCola.t||0)>15*60e3){ toast(msg); enviarCola.ult=msg; enviarCola.t=Date.now(); } break; }
     }
-  } finally { enviando=false; if(n) toast(n===1?'Pase enviado por correo ✓':`${n} pases enviados por correo ✓`); if(!UI.modo) render(); }
+  } finally { enviando=false; if(n) toast(n===1?'Pase enviado por correo ✓':`${n} pases enviados por correo ✓`); if(!UI.modo||UI.modo==='avi') render(); }
 }
 function enviarPase(){
   if(!ENV.url||!ENV.clave){ toast('Primero configura el envío en la pantalla de inicio.'); return; }
@@ -306,6 +322,84 @@ async function probar(){
   }catch(e){ box.className='small bad'; box.textContent='No se pudo conectar. Revisa la dirección y que haya internet.'; }
 }
 
+/* ---------- avisos de parte ---------- */
+const MOTIVOS_AV=['Retraso','Ruido o molestar','Falta de respeto','Uso del móvil','No cumplir el horario','Desorden en la habitación','Otro'];
+const claveN=n=>norm(n).replace(/[^a-z0-9ñ]+/g,' ').trim();
+function guardarAvisos(r){ AV={lista:r.avisos||[],porParte:r.porParte||3,t:Date.now()}; LS.set('pl_avisos',AV); }
+function personasTodas(){
+  const m=new Map();
+  if(H) H.habitaciones.forEach(r=>r.people.forEach(p=>{ if(!p) return; const n=p.full||p.name, k=claveN(n); m.set(k,{k,nombre:n,hab:String(r.habitacion),curso:r.curso||'',casa:'',photo:p.photo}); }));
+  if(C) C.casas.forEach(c=>c.people.forEach(p=>{ const n=p.full||p.name, k=claveN(n);
+    const ya=[...m.values()].find(x=>{ const a=x.k.split(' '), b=k.split(' '); return a.every(w=>b.includes(w))||b.every(w=>a.includes(w)); });
+    if(ya){ ya.casa=corto(c.casa); if(!ya.curso) ya.curso=p.curso||''; if(!ya.photo) ya.photo=p.photo; }
+    else m.set(k,{k,nombre:n,hab:p.habitacion||'',curso:p.curso||'',casa:corto(c.casa),photo:p.photo}); }));
+  return [...m.values()];
+}
+function datosAviso(k){
+  const s=(AV.lista||[]).find(x=>claveN(x.nombre)===k)||{n:0,ult:[]};
+  const pend=COLA.filter(x=>x.aviso&&claveN(x.aviso.nombre)===k), anul=new Set(COLA.filter(x=>x.anular).map(x=>x.anular));
+  const ult=(s.ult||[]).filter(x=>!anul.has(x.id));
+  const n=ult.length<(s.ult||[]).length?s.n-((s.ult||[]).length-ult.length):s.n;
+  return {n:n+pend.length,pend,ult};
+}
+function resumenAvisosTxt(){ const P=AV.porParte||3; let a=0,p=0; (AV.lista||[]).forEach(x=>{a+=x.n;p+=Math.floor(x.n/P);});
+  a+=COLA.filter(x=>x.aviso).length; return a?`${a} ${a===1?'aviso':'avisos'} en el curso · ${p} ${p===1?'parte':'partes'}`:`Cada ${P} avisos = 1 parte`; }
+let consultando=false;
+async function consultarAvisos(){
+  if(consultando||!ENV.url||!ENV.clave||navigator.onLine===false) return; consultando=true;
+  try{ const r=await post({tipo:'consultaAvisos'}); if(r&&r.ok){ guardarAvisos(r); if(UI.modo==='avi'||!UI.modo){ const f=document.activeElement&&document.activeElement.id; render(); if(f==='searchAv'){ const s=document.getElementById('searchAv'); s.focus(); s.setSelectionRange(s.value.length,s.value.length); } } } }
+  catch(e){} finally{ consultando=false; }
+}
+function puntos(n,P){ const r=n%P; return '<span class="dots" aria-hidden="true">'+Array.from({length:P},(_,i)=>`<i class="${i<r?'on':''}"></i>`).join('')+'</span>'; }
+function renderAvisos(){
+  const P=AV.porParte||3;
+  document.getElementById('titulo').textContent='Avisos de parte';
+  document.getElementById('sub').textContent=`Cada ${P} avisos en el curso = 1 parte. Busca al residente y tócalo para ponerle un aviso.`;
+  const T=personasTodas().map(p=>Object.assign(p,datosAviso(p.k)));
+  const q=norm((UI.qa||'').trim());
+  let L=q?T.filter(p=>norm(p.nombre+' '+p.hab+' '+p.casa+' '+p.curso).includes(q)):T.filter(p=>p.n);
+  L.sort((a,b)=>(b.n-a.n)||a.nombre.localeCompare(b.nombre,'es'));
+  const sel=UI.avSel&&T.find(p=>p.k===UI.avSel);
+  let h='';
+  if(!ENV.url||!ENV.clave) h+='<p class="aviso">Este móvil no tiene configurado el envío: los avisos se guardarán aquí y se mandarán cuando se configure en Inicio.</p>';
+  if(sel){
+    const partes=Math.floor(sel.n/P), sig=sel.n+1, quien=LS.get('pl_quien','');
+    h+=`<div class="av-sel"><h2>${esc(sel.nombre)}</h2><p class="small" style="margin:0">${[sel.hab?'Hab. '+esc(sel.hab):'',esc(sel.casa),esc(sel.curso)].filter(Boolean).join(' · ')}</p>
+      <p style="margin:10px 0 0"><b>${sel.n}</b> ${sel.n===1?'aviso':'avisos'} en el curso · <b>${partes}</b> ${partes===1?'parte':'partes'} ${puntos(sel.n,P)}</p>
+      ${sel.ult.length||sel.pend.length?`<ul class="av-hist">${sel.pend.map(x=>`<li><span class="pend">Pendiente de enviar</span> · ${esc(x.aviso.motivo)}${x.aviso.nota?' — '+esc(x.aviso.nota):''} · ${esc(x.aviso.quien)}</li>`).join('')}${sel.ult.map(x=>`<li><b>${new Date(x.f).toLocaleDateString('es-ES',{day:'numeric',month:'short'})}</b> · ${esc(x.motivo)}${x.nota?' — '+esc(x.nota):''}${x.quien?' · '+esc(x.quien):''}</li>`).join('')}</ul>`:'<p class="small">Sin avisos en este curso.</p>'}
+      <div class="field"><label for="avMot">Motivo</label><select id="avMot">${MOTIVOS_AV.map(x=>`<option${UI.avMot===x?' selected':''}>${x}</option>`).join('')}</select></div>
+      <div class="field"><label for="avNota">Nota (opcional)</label><textarea id="avNota" style="min-height:70px" placeholder="Qué ha pasado, brevemente">${esc(UI.avNota||'')}</textarea></div>
+      <div class="field"><label for="avQuien">Quién pone el aviso</label><input id="avQuien" value="${esc(UI.avQuien!=null?UI.avQuien:quien)}" placeholder="Tu nombre" autocomplete="name"></div>
+      <div class="row"><button class="action send" data-act="avPoner">Poner aviso${sig%P===0?` (será su parte n.º ${sig/P})`:''}</button><button class="action" data-act="avCerrar">Cancelar</button></div></div>`;
+  }
+  h+=`<div class="filters"><input id="searchAv" placeholder="Buscar nombre, habitación o casa…" value="${esc(UI.qa||'')}" autocomplete="off"></div>`;
+  h+=`<h3 style="margin:6px 0 10px">${q?'Resultados':'Con avisos en este curso'}</h3>`;
+  if(!L.length) h+=`<p class="small">${q?'No hay coincidencias.':'Nadie tiene avisos todavía. Escribe un nombre arriba para poner el primero.'}</p>`;
+  h+='<div class="avlist">'+L.slice(0,60).map(p=>{ const pa=Math.floor(p.n/P);
+    return `<button class="av-row" data-avsel="${esc(p.k)}"><span class="nm"><b>${esc(p.nombre)}</b><span>${[p.hab?'Hab. '+esc(p.hab):'',esc(p.casa)].filter(Boolean).join(' · ')}</span></span>
+      <span class="av-cnt${pa?' par':''}"><b>${p.n}</b> ${p.n===1?'aviso':'avisos'}${pa?` · <b>${pa}</b> ${pa===1?'parte':'partes'}`:''}<br>${puntos(p.n,P)}</span></button>`; }).join('')+'</div>';
+  if(AV.t) h+=`<p class="small" style="margin-top:14px">Recuento actualizado el ${new Date(AV.t).toLocaleString('es-ES',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}. Se comparte entre todos los móviles.</p>`;
+  document.getElementById('main').innerHTML=h;
+  const s=document.getElementById('searchAv'); if(UI.focoA){ s.focus(); s.setSelectionRange(s.value.length,s.value.length); UI.focoA=false; }
+}
+function ponerAviso(){
+  const P=AV.porParte||3, sel=personasTodas().find(p=>p.k===UI.avSel); if(!sel) return;
+  const motivo=document.getElementById('avMot').value, nota=(document.getElementById('avNota').value||'').trim(), quien=(document.getElementById('avQuien').value||'').trim();
+  if(!quien){ toast('Escribe quién pone el aviso'); document.getElementById('avQuien').focus(); return; }
+  if(motivo==='Otro'&&!nota){ toast('Con «Otro», explica el motivo en la nota'); document.getElementById('avNota').focus(); return; }
+  const n=datosAviso(sel.k).n+1, parte=n%P===0;
+  if(!confirm(`¿Poner un aviso a ${sel.nombre}?\n\nMotivo: ${motivo}${nota?'\nNota: '+nota:''}\n\nSerá su aviso n.º ${n} del curso.${parte?`\n\nATENCIÓN: con este aviso suma su parte n.º ${n/P}.`:''}`)) return;
+  LS.set('pl_quien',quien);
+  const it={id:uid()+uid(),aviso:{nombre:sel.nombre,hab:sel.hab,casa:sel.casa,curso:sel.curso,motivo,nota:nota.slice(0,500),quien:quien.slice(0,60),fecha:Date.now()}};
+  COLA.push(it); guardarEnvio();
+  UI.avNota=''; UI.avMot=null; UI.avQuien=null; render();
+  toast(parte?`Aviso puesto: ${sel.nombre} suma un parte`:`Aviso puesto a ${sel.nombre} (${n})`,'Deshacer',()=>{
+    const i=COLA.findIndex(x=>x.id===it.id);
+    if(i>=0) COLA.splice(i,1); else COLA.push({id:uid()+uid(),anular:it.id});
+    guardarEnvio(); render(); toast('Aviso quitado'); if(i<0) enviarCola(); });
+  enviarCola();
+}
+
 /* ---------- carga del archivo de residentes ---------- */
 async function cargarArchivo(f){
   try{
@@ -320,6 +414,8 @@ async function cargarArchivo(f){
   }catch(e){ alert('Ese archivo no es el de residentes. Elige residentes-santa-espina.json.'); }
 }
 function abrir(m){
+  if(m==='avi'){ if(!H&&!C){ alert('Primero hay que cargar el archivo residentes-santa-espina.json que te ha pasado el responsable.'); document.getElementById('fichero').click(); return; }
+    UI.modo='avi'; UI.qa=''; UI.avSel=null; render(); window.scrollTo(0,0); consultarAvisos(); return; }
   if((m==='hab'&&!H)||(m==='cas'&&!C)){ alert('Primero hay que cargar el archivo residentes-santa-espina.json que te ha pasado el responsable.'); document.getElementById('fichero').click(); return; }
   UI.modo=m; UI.q=''; render(); window.scrollTo(0,0);
 }
@@ -339,6 +435,7 @@ document.addEventListener('toggle',e=>{ if(e.target.tagName==='DETAILS') UI.obsA
 document.addEventListener('click',async e=>{
   const b=e.target.closest('button'); if(!b) return;
   if(b.dataset.abrir){ abrir(b.dataset.abrir); return; }
+  if(b.dataset.avsel!=null){ UI.avSel=b.dataset.avsel; UI.avNota=''; UI.avMot=null; UI.avQuien=null; render(); window.scrollTo(0,0); return; }
   if(b.dataset.tab!=null){ UI.tab[UI.modo]=b.dataset.tab; LS.set('pl_tab_'+UI.modo,b.dataset.tab); render(); window.scrollTo(0,0); return; }
   if(b.classList.contains('person')){
     const m=UI.modo,k=b.dataset.key,st=S[m],s=st.states[k]||'pending';
@@ -365,6 +462,8 @@ document.addEventListener('click',async e=>{
   if(a==='obsEnviar') enviarObs();
   if(a==='csv') descargarCSV();
   if(a==='print'){ document.body.classList.add('print-absent'); window.print(); }
+  if(a==='avPoner'){ ponerAviso(); return; }
+  if(a==='avCerrar'){ UI.avSel=null; render(); return; }
   if(a==='seguir'){ UI.sigue[UI.modo]=true; render(); }
   if(a==='nuevo'){ const m=UI.modo; if(!confirm('¿Dejar toda la lista en blanco para un pase nuevo?')) return;
     S[m]={states:{},reasons:{},late:{}}; guardarEstado(m); UI.sigue[m]=false; render(); window.scrollTo(0,0); toast('Lista en blanco: puedes empezar el pase'); }
@@ -380,11 +479,12 @@ document.addEventListener('click',async e=>{
 });
 document.addEventListener('change',e=>{
   const el=e.target, m=UI.modo;
+  if(el.id==='avMot'){ UI.avMot=el.value; render(); return; }
   if(el.classList.contains('absence-reason')){ S[m].reasons[el.dataset.key]=el.value; guardarEstado(m); render(); }
   if(el.classList.contains('late-time')){ S[m].late[el.dataset.key]=el.value; guardarEstado(m); render(); }
   if(el.id==='fichero'&&el.files[0]){ cargarArchivo(el.files[0]); el.value=''; }
 });
-document.addEventListener('input',e=>{ if(e.target.id==='obsTxt') OBS.texto=e.target.value; if(e.target.id==='obsNom') OBS.nombre=e.target.value; if(e.target.id==='obsTipo') OBS.tipo=e.target.value; if(e.target.id==='search'){ UI.q=e.target.value; UI.foco=true; render(); } });
+document.addEventListener('input',e=>{ if(e.target.id==='searchAv'){ UI.qa=e.target.value; UI.focoA=true; render(); return; } if(e.target.id==='avNota') UI.avNota=e.target.value; if(e.target.id==='avQuien') UI.avQuien=e.target.value; if(e.target.id==='obsTxt') OBS.texto=e.target.value; if(e.target.id==='obsNom') OBS.nombre=e.target.value; if(e.target.id==='obsTipo') OBS.tipo=e.target.value; if(e.target.id==='search'){ UI.q=e.target.value; UI.foco=true; render(); } });
 window.addEventListener('afterprint',()=>document.body.classList.remove('print-absent'));
 window.addEventListener('online',enviarCola);
 setInterval(enviarCola,60000);
