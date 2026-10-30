@@ -14,15 +14,15 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <style>
 *{box-sizing:border-box}
-body{margin:0;background:#f4f6fa;color:#172033;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;background:#f4f6fa;color:#172033;font-size:16px;line-height:1.4;caret-color:#243957;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding-bottom:env(safe-area-inset-bottom,0px)}
 header{background:#18243a;color:#fff;padding:calc(16px + env(safe-area-inset-top,0px)) 16px 16px}
 header .top{display:flex;align-items:center;gap:10px}
 h1{margin:0;font-size:1.4rem}
 header p{margin:6px 0 0;color:#d4dbea;font-size:.9rem;line-height:1.4}
-.back{font:inherit;font-size:.9rem;background:#ffffff1f;color:#fff;border:1px solid #ffffff40;border-radius:9px;padding:7px 11px;cursor:pointer}
+.back{font:inherit;font-size:15px;min-height:44px;background:#ffffff1f;color:#fff;border:1px solid #ffffff40;border-radius:9px;padding:7px 11px;cursor:pointer}
 main{max-width:1100px;margin:auto;padding:14px}
 .tabs,.filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
-.tab,.action{font:inherit;cursor:pointer;border:1px solid #cbd3e1;background:#fff;border-radius:10px;padding:10px 13px;color:#172033}
+.tab,.action{font:inherit;cursor:pointer;border:1px solid #cbd3e1;background:#fff;border-radius:10px;padding:10px 14px;color:#172033;min-height:48px;font-size:16px}
 .tab.active{background:#243957;color:#fff;border-color:#243957}
 .action.primary{background:#243957;color:#fff;border-color:#243957;font-weight:600}
 .action.send{background:#1f7a52;color:#fff;border-color:#1f7a52;font-weight:700}
@@ -32,7 +32,7 @@ main{max-width:1100px;margin:auto;padding:14px}
 .summary{background:#fff;border:1px solid #e0e5ed;border-radius:12px;padding:12px;margin-bottom:14px}
 .summary .tt{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:baseline}
 .chipsum{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
-.chipsum span{font-size:.82rem;border-radius:20px;padding:4px 10px;background:#eef1f6}
+.chipsum span{font-size:.92rem;border-radius:20px;padding:4px 10px;background:#eef1f6}
 .chipsum .p{background:#e3f4ea;color:#187247}.chipsum .t{background:#fdebd9;color:#a14a08}.chipsum .a{background:#fde4e4;color:#b42318}.chipsum .c{background:#fbf1d6;color:#7a5900}
 .progress{height:7px;background:#e6eaf0;border-radius:8px;overflow:hidden;width:100%;margin-top:9px}
 .bar{height:100%;background:#2d8a63;width:0}
@@ -40,26 +40,26 @@ main{max-width:1100px;margin:auto;padding:14px}
 .group{background:#fff;border:1px solid #dce2eb;border-radius:14px;padding:13px}
 .grouphead{display:flex;justify-content:space-between;gap:8px;align-items:baseline;margin-bottom:10px}
 .grouphead h2{font-size:1.05rem;margin:0}
-.grouphead span{font-size:.78rem;color:#667085;text-align:right}
+.grouphead span{font-size:.9rem;color:#525c6e;text-align:right}
 .people{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
 .person-wrap{min-width:0;display:flex;flex-direction:column;gap:4px}
-.person{min-width:0;width:100%;border:1px solid #d9e0ea;border-radius:10px;padding:7px 4px;background:#fff;cursor:pointer;text-align:center;color:#172033;font:inherit}
+.person{min-width:0;width:100%;min-height:44px;border:1px solid #c3ccda;border-radius:10px;padding:7px 4px;background:#fff;cursor:pointer;text-align:center;color:#172033;font:inherit}
 .person img,.person .ph{width:100%;height:88px;object-fit:contain;display:block;background:#f6f7f9;border-radius:6px;margin-bottom:5px}
-.person .ph{display:grid;place-items:center;font-size:1.6rem;font-weight:700;color:#8a94a6}
-.person .name{font-size:.75rem;font-weight:650;line-height:1.15;display:block;overflow-wrap:anywhere;min-height:2.2em}
-.person .room{font-size:.66rem;color:#8a94a6;display:block;margin-top:2px}
-.person .status{font-size:.7rem;display:block;margin-top:4px;color:#667085}
+.person .ph{display:grid;place-items:center;font-size:1.6rem;font-weight:700;color:#5b667a}
+.person .name{font-size:.88rem;font-weight:650;line-height:1.15;display:block;overflow-wrap:anywhere;min-height:2.2em}
+.person .room{font-size:.8rem;color:#525c6e;display:block;margin-top:2px}
+.person .status{font-size:.84rem;font-weight:600;display:block;margin-top:4px;color:#525c6e}
 .person.present{border-color:#62ad88;background:#effaf4}.person.present .status{color:#187247}
 .person.late{border-color:#e08a3c;background:#fff4ea}.person.late .status{color:#b4520b;font-weight:600}
 .person.absent{border-color:#d98989;background:#fff0f0}.person.absent .status{color:#b42318}
 .person.course{border-color:#d6b45b;background:#fff9e8}.person.course .status{color:#8a6500}
-.absence-reason{width:100%;font:inherit;font-size:.68rem;border:1px solid #d98989;border-radius:7px;padding:5px 2px;background:#fff;color:#7f1d1d}
-.late-time{width:100%;font:inherit;font-size:.72rem;border:1px solid #e08a3c;border-radius:7px;padding:4px 2px;background:#fff;color:#7a3a07;text-align:center}
+.absence-reason{width:100%;min-height:44px;font:inherit;font-size:.85rem;border:1px solid #d98989;border-radius:7px;padding:5px 2px;background:#fff;color:#7f1d1d}
+.late-time{width:100%;min-height:44px;font:inherit;font-size:.9rem;border:1px solid #e08a3c;border-radius:7px;padding:4px 2px;background:#fff;color:#7a3a07;text-align:center}
 .print-label{display:none;font-size:.68rem;font-weight:700;margin-top:3px;color:#8b1e1e}
-.vacant{border:1px dashed #e0e5ed;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#b5bdca;font-size:.75rem;min-height:130px}
+.vacant{border:1px dashed #e0e5ed;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#5b667a;font-size:.9rem;min-height:130px}
 .sendbox{margin:18px 0 6px;background:#fff;border:1px solid #cfe5d9;border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:8px}
 .sendbox .action.send{padding:14px;font-size:1.02rem}
-.small{font-size:.83rem;color:#5b667a;line-height:1.4}
+.small{font-size:.95rem;color:#5b667a;line-height:1.4}
 .ok{color:#187247;font-weight:600}.bad{color:#b42318;font-weight:600}
 .card{background:#fff;border:1px solid #e0e5ed;border-radius:14px;padding:14px;margin-top:14px}
 .card h3{margin:0 0 8px;font-size:1rem}
@@ -68,17 +68,21 @@ main{max-width:1100px;margin:auto;padding:14px}
 .hb.cas{border-left-color:#2e6b5e}
 .hb .ic{width:46px;height:46px;border-radius:12px;display:grid;place-items:center;background:#e8edf6;color:#243957;flex:none}
 .hb.cas .ic{background:#e2f0ec;color:#2e6b5e}
-.hb b{display:block;font-size:1.15rem}.hb .s{font-size:.85rem;color:#5b667a}.hb .go{margin-left:auto;font-size:1.6rem;color:#9aa4b5}
+.hb b{display:block;font-size:1.15rem}.hb .s{font-size:.95rem;color:#525c6e}.hb .go{margin-left:auto;font-size:1.6rem;color:#5b667a}
 .field{display:flex;flex-direction:column;gap:4px;margin-bottom:10px}
-.field label{font-size:.8rem;font-weight:600;color:#4a5568}
-.field input,.field select,.field textarea{font:inherit;padding:10px;border:1px solid #cbd3e1;border-radius:10px;background:#fff}
+.field label{font-size:.92rem;font-weight:600;color:#4a5568}
+.field input,.field select,.field textarea{font:inherit;font-size:16px;min-height:44px;padding:10px;border:1px solid #cbd3e1;border-radius:10px;background:#fff}
 .field textarea{min-height:110px;resize:vertical}
 details.card summary{font-weight:700;cursor:pointer}
 details.card[open] summary{margin-bottom:10px}
 .row{display:flex;gap:8px;flex-wrap:wrap}
-.hist{list-style:none;margin:0;padding:0}.hist li{padding:8px 0;border-bottom:1px solid #edf0f5;font-size:.85rem}.hist li:last-child{border:0}
-.toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:#172033;color:#fff;padding:11px 16px;border-radius:12px;font-size:.9rem;z-index:50;max-width:92vw;box-shadow:0 6px 20px #0004}
-@media(max-width:520px){header{padding-left:12px;padding-right:12px}main{padding:10px}.groups{grid-template-columns:1fr}.person img,.person .ph{height:clamp(72px,23vw,110px)}.tab,.action{padding:10px 9px;font-size:.86rem}}
+.hist{list-style:none;margin:0;padding:0}.hist li{padding:8px 0;border-bottom:1px solid #edf0f5;font-size:.95rem}.hist li:last-child{border:0}
+.toast{position:fixed;left:12px;right:12px;margin:0 auto;width:fit-content;bottom:calc(18px + env(safe-area-inset-bottom,0px));background:#172033;color:#fff;padding:11px 16px;border-radius:12px;font-size:1rem;z-index:50;max-width:92vw;box-shadow:0 6px 20px #0004;display:flex;align-items:center;gap:12px}
+.toast[hidden]{display:none}
+.toast button{font:inherit;font-weight:700;background:#fff;color:#172033;border:0;border-radius:9px;padding:8px 14px;min-height:44px;cursor:pointer}
+:focus-visible{outline:3px solid #2f6fdb;outline-offset:2px}
+::selection{background:#c9d8f2;color:#172033}
+@media(max-width:520px){header{padding-left:12px;padding-right:12px}main{padding:10px}.groups{grid-template-columns:1fr}.person img,.person .ph{height:clamp(72px,23vw,110px)}.tab,.action{padding:10px 10px;font-size:15px}}
 @media print{header{background:#fff;color:#000;padding:0 0 10px}header p,.back{display:none}.tabs,.filters,.sendbox,.no-print,.toast{display:none!important}main{padding:0}.groups{grid-template-columns:repeat(2,1fr)}.group,.person-wrap,.vacant{break-inside:avoid}
 body.print-absent .summary,body.print-absent .person-wrap:not(.print-me),body.print-absent .vacant,body.print-absent .group:not(:has(.print-me)){display:none!important}
 body.print-absent .absence-reason,body.print-absent .late-time{display:none!important}body.print-absent .print-label{display:block!important}
@@ -89,7 +93,7 @@ body.print-absent header h1:after{content:" — AUSENTES NO JUSTIFICADOS Y TARDE
 <header><div class="top"><button class="back" data-act="inicio" id="btnBack" hidden>‹ Inicio</button><h1 id="titulo">Pasar Lista</h1></div><p id="sub"></p></header>
 <main id="main"></main>
 <input type="file" id="fichero" accept=".json,application/json" hidden>
-<div class="toast" id="toast" hidden></div>
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 <script>
 "use strict";
 /* ---------- residentes guardados en el móvil (IndexedDB) ---------- */
@@ -118,7 +122,9 @@ const corto=c=>String(c).replace(/^Casa\s+/,'').replace('San Juan Bautista de la
 const iniciales=n=>n.split(/\s+/).filter(Boolean).slice(0,2).map(w=>w[0]).join('').toUpperCase();
 const ahora=()=>new Date().toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'});
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8);
-function toast(t){const e=document.getElementById('toast');e.textContent=t;e.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>e.hidden=true,3200);}
+function toast(t,acc,fn){const e=document.getElementById('toast');e.textContent='';const sp=document.createElement('span');sp.textContent=t;e.appendChild(sp);
+  if(acc&&fn){const b=document.createElement('button');b.type='button';b.textContent=acc;b.dataset.toast='1';b.onclick=ev=>{ev.stopPropagation();e.hidden=true;fn();};e.appendChild(b);}
+  e.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>e.hidden=true,acc?5000:3200);}
 
 /* ---------- listas ---------- */
 const PLANTA=r=>String(r).startsWith('2')?'1':String(r).startsWith('3')?'2':'otra';
@@ -133,13 +139,13 @@ function ambito(m,t){
 function grupos(m,t){
   if(m==='hab'){
     return H.habitaciones.filter(r=>t==='all'||PLANTA(r.habitacion)===t).map(r=>({h2:'Habitación '+r.habitacion,sub:r.curso||'',
-      slots:r.people.map(p=>p?{key:r.habitacion+'|'+p.name,name:p.name,photo:p.photo,hab:String(r.habitacion),curso:r.curso||'',grupo:(PLANTA(r.habitacion)==='1'?'1.ª planta':'2.ª planta')}:null)}));
+      slots:r.people.map(p=>p?{key:r.habitacion+'|'+p.name,name:p.name,full:p.full||'',photo:p.photo,hab:String(r.habitacion),curso:r.curso||'',grupo:(PLANTA(r.habitacion)==='1'?'1.ª planta':'2.ª planta')}:null)}));
   }
   const out=[];
   C.casas.forEach((c,i)=>{ if(t!=='all'&&String(i)!==t) return;
     const gs=[]; c.people.forEach(p=>{const k=t==='all'?corto(c.casa):(p.curso||'Sin curso');let g=gs.find(x=>x.k===k);if(!g){g={k,ps:[]};gs.push(g);}g.ps.push(p);});
     gs.forEach(g=>out.push({h2:g.k,sub:`${g.ps.length} ${g.ps.length===1?'persona':'personas'}`,
-      slots:g.ps.map(p=>({key:c.casa+'|'+p.name,name:p.name,photo:p.photo,hab:p.habitacion||'',curso:p.curso||'',grupo:c.casa}))}));
+      slots:g.ps.map(p=>({key:c.casa+'|'+p.name,name:p.name,full:p.full||'',photo:p.photo,hab:p.habitacion||'',curso:p.curso||'',grupo:c.casa}))}));
   });
   return out;
 }
@@ -240,7 +246,7 @@ function renderLista(m){
 function construirPase(){
   const m=UI.modo,t=UI.tab[m],st=S[m],filas=[];
   for(const g of grupos(m,t)) for(const p of g.slots){ if(!p) continue; const s=st.states[p.key]||'pending';
-    if(s==='absent'||s==='late'||s==='pending') filas.push({grupo:m==='hab'?g.h2:corto(p.grupo),hab:p.hab,curso:p.curso,nombre:p.name,estado:EST[s],motivo:s==='absent'?MOT[st.reasons[p.key]||'unjustified']:'',hora:s==='late'?(st.late[p.key]||''):''}); }
+    if(s==='absent'||s==='late'||s==='pending') filas.push({grupo:m==='hab'?g.h2:corto(p.grupo),hab:p.hab,curso:p.curso,nombre:p.full||p.name,estado:EST[s],motivo:s==='absent'?MOT[st.reasons[p.key]||'unjustified']:'',hora:s==='late'?(st.late[p.key]||''):''}); }
   return {id:uid()+uid(),lista:m==='hab'?'Habitaciones':'Casas',ambito:ambito(m,t),fecha:Date.now(),totales:contar(m,t),filas};
 }
 function descargarCSV(){
@@ -329,10 +335,18 @@ document.addEventListener('click',async e=>{
   if(b.classList.contains('person')){
     const m=UI.modo,k=b.dataset.key,st=S[m],s=st.states[k]||'pending';
     const nx={pending:'present',present:'late',late:'absent',absent:'course',course:'pending'}[s];
+    const prev={s:st.states[k],l:st.late[k],r:st.reasons[k]};
     if(nx==='pending') delete st.states[k]; else st.states[k]=nx;
     if(nx==='late') st.late[k]=ahora(); else delete st.late[k];
     if(nx!=='absent') delete st.reasons[k];
-    guardarEstado(m); render(); return;
+    guardarEstado(m); render();
+    const nom=(b.querySelector('.name')||{}).textContent||'';
+    toast(nom+': '+EST[nx],'Deshacer',()=>{ if(UI.modo!==m) return;
+      if(prev.s) st.states[k]=prev.s; else delete st.states[k];
+      if(prev.l) st.late[k]=prev.l; else delete st.late[k];
+      if(prev.r) st.reasons[k]=prev.r; else delete st.reasons[k];
+      guardarEstado(m); render(); });
+    return;
   }
   const a=b.dataset.act; if(!a) return;
   if(a==='inicio'){ UI.modo=null; render(); window.scrollTo(0,0); }
