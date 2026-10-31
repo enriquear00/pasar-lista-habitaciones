@@ -229,8 +229,13 @@ function renderInicio(){
     <div class="row"><button class="action primary" data-act="obsEnviar">Enviar observación</button></div>
     ${COLA.some(x=>x.obs)?'<p class="small">Hay observaciones pendientes: se enviarán en cuanto haya internet.</p>':''}</details>`;
   // datos
-  h+=`<div class="card"><h3>Residentes en este móvil</h3><p class="small">Los nombres y fotos no están en internet: se cargan desde el archivo privado <b>residentes-santa-espina.json</b> y se quedan solo en este móvil.${H&&H.cargado?` Habitaciones cargadas el ${new Date(H.cargado).toLocaleDateString('es-ES')}.`:''}${C&&C.cargado?` Casas cargadas el ${new Date(C.cargado).toLocaleDateString('es-ES')}.`:''}</p>
-    <div class="row"><button class="action primary" data-act="cargar">${H||C?'Cambiar archivo de residentes':'Cargar residentes'}</button>${H||C?'<button class="action danger" data-act="borrar">Borrar residentes de este móvil</button>':''}</div></div>`;
+  const sy=LS.get('pl_sync',0), conFotos=H?H.habitaciones.some(r=>r.people.some(p=>p&&p.photo)):false;
+  h+=`<div class="card"><h3>Lista de residentes</h3><p class="small">La lista (habitaciones y casas) se descarga sola de la hoja <b>«Residentes»</b> de Google cada vez que abres la app con internet. Para cambiar a alguien de habitación, se cambia en la hoja.
+    ${sy?`<br><b>Actualizada: ${new Date(sy).toLocaleString('es-ES',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</b>.`:(ENV.url&&ENV.clave?'':' <span class="bad">Configura el envío por correo para que se descargue.</span>')}
+    ${conFotos?'':' Las fotos se toman del archivo <b>residentes-santa-espina.json</b> si se ha cargado alguna vez en este móvil.'}</p>
+    <div class="row"><button class="action primary" data-act="sincronizar">Actualizar lista ahora</button></div>
+    <details class="mas" ${H||C?'':'open'}><summary>Fotos y archivo de residentes ›</summary><p class="small" style="margin:6px 0">Cargar el archivo .json añade las fotos. Los nombres y habitaciones se vuelven a tomar de la hoja en la siguiente actualización.</p>
+    <div class="row"><button class="action" data-act="cargar">${H||C?'Cargar archivo (fotos)':'Cargar archivo de residentes'}</button>${H||C?'<button class="action danger" data-act="borrar">Borrar residentes de este móvil</button>':''}</div></details></div>`;
   document.getElementById('main').innerHTML=h;
 }
 function renderLista(m){
@@ -328,7 +333,7 @@ async function probar(){
   if(!ENV.url||!ENV.clave){ box.className='small bad'; box.textContent='Pega la dirección y la clave.'; return; }
   box.className='small'; box.textContent='Probando…';
   try{ const r=await post({prueba:true});
-    if(r&&r.ok){ box.className='small ok'; box.textContent='Conexión correcta. Los pases se enviarán por correo.'; enviarCola(); }
+    if(r&&r.ok){ box.className='small ok'; box.textContent='Conexión correcta. Los pases se enviarán por correo.'; enviarCola(); sincronizarResidentes(true); }
     else { box.className='small bad'; box.textContent=r&&r.error==='clave'?'La clave no es correcta.':'El servicio ha respondido con un error.'; }
   }catch(e){ box.className='small bad'; box.textContent='No se pudo conectar. Revisa la dirección y que haya internet.'; }
 }
@@ -411,6 +416,41 @@ function ponerAviso(){
   enviarCola();
 }
 
+/* ---------- lista de residentes desde la hoja de Google ---------- */
+let sincronizando=false;
+function mapaFotos(){
+  const m=new Map(), add=(n,f)=>{ if(n&&f) m.set(claveN(n),f); };
+  if(H) H.habitaciones.forEach(r=>r.people.forEach(p=>{ if(p){ add(p.full,p.photo); add(p.name,p.photo); } }));
+  if(C) C.casas.forEach(c=>c.people.forEach(p=>{ add(p.full,p.photo); add(p.name,p.photo); }));
+  return m;
+}
+function fotoDe(M,full,name){
+  let f=M.get(claveN(full||''))||M.get(claveN(name||'')); if(f) return f;
+  const t=claveN(full||name||'').split(' ').filter(Boolean); if(t.length<2) return undefined;
+  const c=[...M.keys()].filter(k=>{ const q=k.split(' '); return t.every(w=>q.includes(w))||(q.length>=2&&q.every(w=>t.includes(w))); });
+  return c.length===1?M.get(c[0]):undefined;
+}
+async function sincronizarResidentes(manual){
+  if(sincronizando) return;
+  if(!ENV.url||!ENV.clave){ if(manual) toast('Primero configura el envío por correo (más abajo).'); return; }
+  if(navigator.onLine===false){ if(manual) toast('Sin internet: se usa la última lista guardada.'); return; }
+  sincronizando=true; if(manual) toast('Descargando la lista de residentes…');
+  try{
+    const r=await post({tipo:'residentes'});
+    if(!r||!r.ok){ if(manual) toast(r&&r.error==='clave'?'La clave del envío no es correcta.':'No se pudo descargar la lista. Se usa la guardada.'); return; }
+    if(!Array.isArray(r.habitaciones)||!r.habitaciones.length){ if(manual) toast('La hoja de residentes está vacía: se mantiene la lista guardada.'); return; }
+    const M=mapaFotos(), ts=Date.now();
+    const habitaciones=r.habitaciones.map(h=>({habitacion:h.habitacion,curso:h.curso||'',people:h.people.map(p=>p?Object.assign({},p,{photo:fotoDe(M,p.full,p.name)}):null)}));
+    const casas=(r.casas||[]).map(c=>({casa:c.casa,people:c.people.map(p=>Object.assign({},p,{photo:fotoDe(M,p.full,p.name)}))}));
+    H={tipo:'habitaciones-santa-espina',habitaciones,cargado:ts,origen:'hoja'}; await dbSet('datos',H);
+    if(casas.length){ C={tipo:'casas-santa-espina',casas,cargado:ts,origen:'hoja'}; await dbSet('casas',C); }
+    LS.set('pl_sync',ts);
+    if(!UI.modo||UI.modo==='avi') render(); else if(manual) render();
+    if(manual) toast(`Lista actualizada: ${habitaciones.reduce((a,h)=>a+h.people.filter(Boolean).length,0)} en habitaciones`);
+  }catch(e){ if(manual) toast('No se pudo conectar. Se usa la última lista guardada.'); }
+  finally{ sincronizando=false; }
+}
+
 /* ---------- carga del archivo de residentes ---------- */
 async function cargarArchivo(f){
   try{
@@ -424,10 +464,11 @@ async function cargarArchivo(f){
     alert('Residentes cargados.'+(nH?`\nHabitaciones: ${nH} personas.`:'')+(nC?`\nCasas: ${nC} personas.`:''));
   }catch(e){ alert('Ese archivo no es el de residentes. Elige residentes-santa-espina.json.'); }
 }
-function abrir(m){
-  if(m==='avi'){ if(!H&&!C){ alert('Primero hay que cargar el archivo residentes-santa-espina.json que te ha pasado el responsable.'); document.getElementById('fichero').click(); return; }
+async function abrir(m){
+  if(!H&&!C&&ENV.url&&ENV.clave&&navigator.onLine!==false){ await sincronizarResidentes(true); }
+  if(m==='avi'){ if(!H&&!C){ alert('Todavía no hay lista de residentes. Configura el envío por correo para descargarla, o carga el archivo residentes-santa-espina.json.'); return; }
     UI.modo='avi'; UI.qa=''; UI.avSel=null; render(); window.scrollTo(0,0); consultarAvisos(); return; }
-  if((m==='hab'&&!H)||(m==='cas'&&!C)){ alert('Primero hay que cargar el archivo residentes-santa-espina.json que te ha pasado el responsable.'); document.getElementById('fichero').click(); return; }
+  if((m==='hab'&&!H)||(m==='cas'&&!C)){ alert('Todavía no hay lista de residentes. Configura el envío por correo para descargarla, o carga el archivo residentes-santa-espina.json.'); return; }
   UI.modo=m; UI.q=''; render(); window.scrollTo(0,0);
 }
 
@@ -465,7 +506,7 @@ document.addEventListener('click',async e=>{
     return;
   }
   const a=b.dataset.act; if(!a) return;
-  if(a==='inicio'){ UI.modo=null; render(); window.scrollTo(0,0); }
+  if(a==='inicio'){ UI.modo=null; render(); window.scrollTo(0,0); if(Date.now()-LS.get('pl_sync',0)>10*60e3) sincronizarResidentes(false); }
   if(a==='cargar') document.getElementById('fichero').click();
   if(a==='probar') probar();
   if(a==='reintentar') enviarCola();
@@ -473,6 +514,7 @@ document.addEventListener('click',async e=>{
   if(a==='obsEnviar') enviarObs();
   if(a==='csv') descargarCSV();
   if(a==='print'){ document.body.classList.add('print-absent'); window.print(); }
+  if(a==='sincronizar'){ sincronizarResidentes(true); return; }
   if(a==='avPoner'){ ponerAviso(); return; }
   if(a==='avCerrar'){ UI.avSel=null; render(); return; }
   if(a==='seguir'){ UI.sigue[UI.modo]=true; render(); }
@@ -511,6 +553,7 @@ setInterval(enviarCola,60000);
   try{ H=await dbGet('datos')||null; }catch(e){ H=null; }
   try{ C=await dbGet('casas')||null; }catch(e){ C=null; }
   render();
+  sincronizarResidentes(false);
   if(UI.conectado){ const el=document.getElementById('cfg'); if(el){ el.scrollIntoView({block:'start'}); const i=document.getElementById('env_movil'); i&&i.focus(); } toast('Dirección y clave puestas. Escribe el nombre del móvil y pulsa «Guardar y probar».'); }
   enviarCola();
 })();
