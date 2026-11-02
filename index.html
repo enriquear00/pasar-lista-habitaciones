@@ -2,6 +2,8 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' https://script.google.com https://script.googleusercontent.com; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Pasar Lista</title>
 <meta name="theme-color" content="#f2f0ee">
@@ -192,6 +194,7 @@ const EST_CORTO={present:'Presente',late:'Tarde',absent:'Ausente',course:'En cur
 const norm=s=>String(s).normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const corto=c=>String(c).replace(/^Casa\s+/,'').replace('San Juan Bautista de la Salle','La Salle').replace('San Juan Pablo II','Juan Pablo II');
+const fotoOk=f=>typeof f==='string'&&f.length<400000&&/^data:image\/(png|jpe?g|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(f);
 const iniciales=n=>n.split(/\s+/).filter(Boolean).slice(0,2).map(w=>w[0]).join('').toUpperCase();
 const ahora=()=>new Date().toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'});
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8);
@@ -338,7 +341,7 @@ const seImprime=(m,k)=>{ const s=S[m].states[k]; return s==='late'||(s==='absent
 function tarjeta(m,p){
   const s=S[m].states[p.key]||'pending', k=esc(p.key), n=esc(p.name);
   return `<div class="person-wrap${seImprime(m,p.key)?' print-me':''}" data-wrap="${k}" data-nombre="${n}" data-s="${s}"><button class="person ${s}" data-key="${k}" aria-label="${n}: ${EST[s]}">
-    ${p.photo?`<img src="${p.photo}" alt="" loading="lazy" decoding="async">`:`<span class="ph">${esc(iniciales(p.name))}</span>`}
+    ${fotoOk(p.photo)?`<img src="${p.photo}" alt="" loading="lazy" decoding="async">`:`<span class="ph">${esc(iniciales(p.name))}</span>`}
     <span class="name">${n}</span>${m==='cas'&&p.hab?`<span class="room">Hab. ${esc(p.hab)}</span>`:''}<span class="status">${estadoHTML(m,p.key)}</span></button>
     <span class="slot">${controlHTML(m,p.key,p.name)}</span><span class="print-label">${esc(etiquetaImpresion(m,p.key))}</span></div>`;
 }
