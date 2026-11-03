@@ -30,6 +30,15 @@ header p{margin:6px 0 0;color:#525c6e;font-size:.95rem;line-height:1.4}
 .back{font:inherit;font-size:15px;min-height:44px;background:#fff;color:#172033;border:1px solid #d5dce8;border-radius:999px;padding:7px 14px;cursor:pointer}
 main{max-width:1100px;margin:auto;padding:14px}
 .tabs,.filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.momento{min-width:0;margin:0 0 12px;background:#fff;border:1px solid #e0e5ed;border-radius:12px;padding:10px 12px 12px;margin-bottom:12px}
+.momento.falta{border-color:#b42318;box-shadow:0 0 0 2px rgba(180,35,24,.15)}
+.momento legend,.momento .lbl{font-weight:700;font-size:15px;padding:0;margin-bottom:8px;display:block}
+.momento .req{color:#b42318;font-weight:600;font-size:13px;margin-left:6px}
+.momento .opc{display:flex;flex-wrap:wrap;gap:8px}
+.momento .opc button{font:inherit;font-size:15px;cursor:pointer;border:1px solid #cbd3e1;background:#fff;color:#172033;border-radius:999px;padding:8px 14px;min-height:44px}
+.momento .opc button[aria-checked="true"]{background:#243957;color:#fff;border-color:#243957;font-weight:600}
+.momento .err{color:#b42318;font-size:14px;margin:8px 0 0}
+.hist .mom{display:inline-block;background:#e8edf6;color:#243957;border-radius:999px;padding:1px 8px;font-size:13px;font-weight:600}
 .tab,.action{font:inherit;cursor:pointer;border:1px solid #cbd3e1;background:#fff;border-radius:10px;padding:10px 14px;color:#172033;min-height:48px;font-size:16px}
 .tab.active{background:#243957;color:#fff;border-color:#243957}
 .action.primary{background:#243957;color:#fff;border-color:#243957;font-weight:600}
@@ -119,7 +128,7 @@ details.mas .row{margin-top:6px}
 details.card summary{font-weight:700;cursor:pointer;min-height:44px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-family:var(--display);color:var(--navy);font-size:1.05rem}
 details.card[open] summary{margin-bottom:10px}
 .row{display:flex;gap:8px;flex-wrap:wrap}
-.hist{list-style:none;margin:0;padding:0}.hist li{padding:8px 0;border-bottom:1px solid #edf0f5;font-size:.95rem}.hist li:last-child{border:0}
+.hist{list-style:none;margin:0;padding:0}.hist li{padding:8px 0;border-bottom:1px solid #edf0f5;font-size:.95rem}.hist li:last-child{border:0}.hist li[data-hist]{cursor:pointer}
 .toast{position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0px));margin:0 auto;width:fit-content;max-width:min(92vw,520px);min-height:52px;background:#172033;color:#fff;padding:6px 6px 6px 16px;border-radius:14px;font-size:1rem;z-index:50;box-shadow:0 6px 20px #0004;display:flex;align-items:center;justify-content:space-between;gap:12px;pointer-events:none;transition:transform 220ms var(--ease-out),opacity 180ms ease,visibility 0s}
 .toast:not(:has(button)){padding-right:16px}
 .toast.fuera{opacity:0;transform:translateY(calc(100% + 16px));visibility:hidden;transition:transform 160ms var(--ease-out),opacity 140ms ease,visibility 0s 160ms}
@@ -178,6 +187,8 @@ const LS={get(k,d){try{const v=JSON.parse(localStorage.getItem(k)||'null');retur
 const K={hab:['attendanceRoomStates','attendanceAbsenceReasons','attendanceLateTimes'],cas:['casas_states','casas_reasons','casas_late']};
 const S={};for(const m of ['hab','cas'])S[m]={states:LS.get(K[m][0],{}),reasons:LS.get(K[m][1],{}),late:LS.get(K[m][2],{})};
 function guardarEstado(m){LS.set(K[m][0],S[m].states);LS.set(K[m][1],S[m].reasons);LS.set(K[m][2],S[m].late);LS.set('pl_ts_'+m,Object.keys(S[m].states).length?Date.now():0);}
+const MOMENTOS=['Estudio','Comida','Cena','Noche','Actividades formativas','Actividades de deporte','Actividades lúdicas'];
+const momentoDe=m=>{ const v=LS.get('pl_mom_'+m,''); return MOMENTOS.includes(v)?v:''; }, ponMomento=(m,v)=>LS.set('pl_mom_'+m,MOMENTOS.includes(v)?v:'');
 const marcasDe=m=>Object.keys(S[m].states).length, tsMarcas=m=>LS.get('pl_ts_'+m,0);
 function marcasViejas(m){ const n=marcasDe(m); if(!n) return false; const ts=tsMarcas(m); return !ts||Date.now()-ts>5*3600e3; }
 let H=null, C=null;                       // {habitaciones,cargado} · {casas,cargado}
@@ -292,7 +303,7 @@ function renderInicio(){
   // últimos envíos
   h+=`<div class="card"><h3>Pases enviados por correo</h3>`;
   if(pend) h+=`<p class="small bad">${pend} ${pend===1?'pase pendiente':'pases pendientes'} de enviar. Se mandarán solos en cuanto haya internet.</p><div class="row" style="margin-bottom:8px"><button class="action" data-act="reintentar">Enviar ahora</button></div>`;
-  if(HIST.length) h+='<ul class="hist">'+HIST.slice(0,6).map(x=>`<li><b>${new Date(x.fecha).toLocaleString('es-ES',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</b> · ${esc(x.lista)} · ${esc(x.ambito)}<br><span class="small">${x.presentes} presentes · ${x.ausentes} ausentes · ${x.tarde} tarde — ${x.enviado?'<span class="ok">enviado ✓</span>':'<span class="bad">pendiente</span>'}</span></li>`).join('')+'</ul>';
+  if(HIST.length) h+='<ul class="hist">'+HIST.slice(0,6).map(x=>`<li data-hist="${esc(x.id)}" role="button" tabindex="0"><b>${new Date(x.fecha).toLocaleString('es-ES',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</b> · ${esc(x.lista)} · ${esc(x.ambito)}${x.momento?` · <span class="mom">${esc(x.momento)}</span>`:''}<br><span class="small">${x.presentes} presentes · ${x.ausentes} ausentes · ${x.tarde} tarde — ${x.enviado?'<span class="ok">enviado ✓</span>':'<span class="bad">pendiente</span>'}</span></li>`).join('')+'</ul>';
   else h+=`<p class="small">Cuando termines un pase, pulsa <b>Enviar pase por correo</b> y llegará un Excel con los ausentes y los totales a c.pardo@educatioservanda.org.</p>`;
   h+=`</div>`;
   // configuración del envío
@@ -373,6 +384,12 @@ function htmlGrupos(m,t){
   }
   return html||'<p>No hay coincidencias.</p>';
 }
+function htmlMomento(m){
+  const v=momentoDe(m), falta=UI.faltaMom===m&&!v;
+  return `<fieldset class="momento no-print${falta?' falta':''}" id="momento"><legend>Momento del pase de lista<span class="req">obligatorio</span></legend>
+    <div class="opc" role="radiogroup" aria-label="Momento del pase de lista" aria-required="true">${MOMENTOS.map(x=>`<button type="button" role="radio" aria-checked="${v===x}" data-mom="${esc(x)}">${esc(x)}</button>`).join('')}</div>
+    ${falta?'<p class="err" role="alert">Elige el momento del pase de lista antes de enviarlo.</p>':''}</fieldset>`;
+}
 function renderLista(m){
   const tabs=pestanas(m); let t=UI.tab[m]; if(!tabs.some(x=>x[0]===t)) t=UI.tab[m]=tabs[0][0];
   document.getElementById('titulo').textContent=m==='hab'?'Lista por habitaciones':'Lista por casas';
@@ -382,6 +399,7 @@ function renderLista(m){
       <div class="row" style="margin-top:10px"><button class="action primary" data-act="nuevo">Empezar pase nuevo</button><button class="action" data-act="seguir">Seguir con estas marcas</button></div></div>`:'';
   document.getElementById('main').innerHTML=aviso+`
     <div class="tabs">${tabs.map(([v,x])=>`<button class="tab${v===t?' active':''}" data-tab="${v}">${esc(x)}</button>`).join('')}</div>
+    ${htmlMomento(m)}
     <div class="filters"><input id="search" type="search" enterkeyhint="search" placeholder="Buscar nombre, curso o habitación…" value="${esc(UI.q)}" autocomplete="off"></div>
     <div class="summary" id="resumen"><div class="tt"><strong>${esc(ambito(m,t))}</strong><span class="fin"><span class="cuenta" id="r_cuenta" aria-live="polite"></span><button class="action send enviar-ya" data-act="enviar">Enviar pase</button></span></div>
       <div class="stats"><div class="p"><b id="r_p"></b><span>Presentes</span></div><div class="t"><b id="r_t"></b><span>Tarde</span></div><div class="a"><b id="r_a"></b><span>Ausentes</span></div><div class="c"><b id="r_c"></b><span>Curso</span></div><div><b id="r_n"></b><span>Pend.</span></div></div>
@@ -403,15 +421,15 @@ function construirPase(){
   const m=UI.modo,t=UI.tab[m],st=S[m],filas=[];
   for(const g of grupos(m,t)) for(const p of g.slots){ if(!p) continue; const s=st.states[p.key]||'pending';
     if(s==='absent'||s==='late'||s==='pending') filas.push({grupo:m==='hab'?g.h2:corto(p.grupo),hab:p.hab,curso:p.curso,nombre:p.full||p.name,estado:EST[s],motivo:s==='absent'?MOT[st.reasons[p.key]||'unjustified']:'',hora:s==='late'?(st.late[p.key]||''):''}); }
-  return {id:uid()+uid(),lista:m==='hab'?'Habitaciones':'Casas',ambito:ambito(m,t),fecha:Date.now(),totales:contar(m,t),filas};
+  return {id:uid()+uid(),lista:m==='hab'?'Habitaciones':'Casas',ambito:ambito(m,t),momento:momentoDe(m),fecha:Date.now(),totales:contar(m,t),filas};
 }
 function descargarCSV(){
   const m=UI.modo,t=UI.tab[m],st=S[m],d=new Date(),z=n=>String(n).padStart(2,'0');
   const fecha=`${d.getFullYear()}-${z(d.getMonth()+1)}-${z(d.getDate())}`,hora=`${z(d.getHours())}:${z(d.getMinutes())}`;
   const c=v=>{v=String(v??'');return /[;"\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};
-  const filas=[['Fecha','Hora del pase',m==='hab'?'Planta':'Casa','Habitación','Curso','Nombre','Estado','Motivo ausencia','Hora de llegada']];
+  const mom=momentoDe(m), filas=[['Fecha','Hora del pase',m==='hab'?'Planta':'Casa','Habitación','Curso','Nombre','Estado','Motivo ausencia','Hora de llegada','Momento del pase de lista']];
   for(const g of grupos(m,t)) for(const p of g.slots){ if(!p) continue; const s=st.states[p.key]||'pending';
-    filas.push([fecha,hora,m==='hab'?p.grupo:corto(p.grupo),p.hab,p.curso,p.full||p.name,EST[s],s==='absent'?MOT[st.reasons[p.key]||'unjustified']:'',s==='late'?(st.late[p.key]||''):'']); }
+    filas.push([fecha,hora,m==='hab'?p.grupo:corto(p.grupo),p.hab,p.curso,p.full||p.name,EST[s],s==='absent'?MOT[st.reasons[p.key]||'unjustified']:'',s==='late'?(st.late[p.key]||''):'',mom]); }
   const txt='﻿'+filas.map(f=>f.map(c).join(';')).join('\r\n')+'\r\n';
   const sufijo=m==='hab'?(t==='all'?'habitaciones':'planta'+t):(t==='all'?'casas':norm(corto(C.casas[+t].casa)).replace(/[^a-z0-9]+/g,'-'));
   const url=URL.createObjectURL(new Blob([txt],{type:'text/csv;charset=utf-8'}));
@@ -432,20 +450,29 @@ async function enviarCola(){
       try{ res=await post(it.obs?{tipo:'observacion',id:it.id,obs:it.obs}:it.aviso?{tipo:'aviso',id:it.id,aviso:it.aviso}:it.anular?{tipo:'anularAviso',id:it.id,ref:it.anular}:{tipo:'pase',id:it.id,pase:it}); }catch(e){ break; }
       if(res&&res.ok){ COLA.shift(); const h=HIST.find(x=>x.id===it.id); if(h) h.enviado=true; if(res.avisos) guardarAvisos(res);
         if(it.obs) toast('Observación enviada. ¡Gracias!'); else if(!it.aviso&&!it.anular) n++; guardarEnvio(); }
-      else { const msg=res&&res.error==='clave'?'La clave del envío no es correcta. Revísala en Inicio.':'El servicio de correo ha dado un error. Se reintentará.'; if(enviarCola.ult!==msg||Date.now()-(enviarCola.t||0)>15*60e3){ toast(msg); enviarCola.ult=msg; enviarCola.t=Date.now(); } break; }
+      else { const msg=res&&res.error==='clave'?'La clave del envío no es correcta. Revísala en Inicio.':res&&res.error==='momento'?'El servidor rechazó un pase sin momento válido.':'El servicio de correo ha dado un error. Se reintentará.'; if(enviarCola.ult!==msg||Date.now()-(enviarCola.t||0)>15*60e3){ toast(msg); enviarCola.ult=msg; enviarCola.t=Date.now(); } break; }
     }
   } finally { enviando=false; if(n) toast(n===1?'Pase enviado por correo ✓':`${n} pases enviados por correo ✓`); if(!UI.modo||UI.modo==='avi') renderFondo(); }
 }
 async function enviarPase(){
   if(!ENV.url||!ENV.clave){ toast('Primero configura el envío en la pantalla de inicio.'); return; }
+  if(!momentoDe(UI.modo)){ UI.faltaMom=UI.modo; const box=document.getElementById('momento'); if(box) box.outerHTML=htmlMomento(UI.modo);
+    const nb=document.getElementById('momento'); if(nb) nb.scrollIntoView({block:'center',behavior:'smooth'});
+    await informar('Falta el momento del pase','Elige el momento del pase de lista (Estudio, Comida, Cena, Noche o una actividad) antes de enviarlo.'); return; }
   const p=construirPase(), T=p.totales, fila=(a,b)=>`<div><dt>${a}</dt><dd>${b}</dd></div>`;
   const html=(marcasViejas(UI.modo)?'<p class="aviso"><b>Las marcas son de hace más de 5 horas.</b> Comprueba que son del pase de ahora.</p>':'')
     +(T.pendientes?`<p class="aviso">Quedan <b>${T.pendientes}</b> sin pasar. Se enviarán como «Pendiente».</p>`:'')
     +`<dl class="tot">${fila(`Presentes (${T.tarde} tarde)`,T.presentes+T.tarde)}${fila(`Ausentes (${T.nojust} no justificados)`,T.ausentes)}${fila('En un curso',T.curso)}</dl>`;
-  if(!await hoja({titulo:`Enviar el pase de ${p.ambito}`,html,ok:T.pendientes?'Enviar igualmente':'Enviar pase',clase:'send'})) return;
-  COLA.push(p); HIST.unshift({id:p.id,fecha:p.fecha,lista:p.lista,ambito:p.ambito,presentes:T.presentes+T.tarde,ausentes:T.ausentes,tarde:T.tarde,enviado:false}); HIST=HIST.slice(0,20); guardarEnvio();
+  if(!await hoja({titulo:`Enviar el pase de ${p.ambito} · ${p.momento}`,html,ok:T.pendientes?'Enviar igualmente':'Enviar pase',clase:'send'})) return;
+  COLA.push(p); ponMomento(UI.modo,''); HIST.unshift({id:p.id,fecha:p.fecha,lista:p.lista,ambito:p.ambito,momento:p.momento,presentes:T.presentes+T.tarde,ausentes:T.ausentes,tarde:T.tarde,enviado:false}); HIST=HIST.slice(0,20); guardarEnvio();
+  if(UI.modo) render();
   if(navigator.onLine===false) toast('Sin internet: el pase se enviará solo cuando haya conexión.'); else toast('Enviando pase…');
   enviarCola();
+}
+function verPase(id){
+  const x=HIST.find(h=>h.id===id); if(!x) return;
+  const fila=(a,b)=>`<div><dt>${a}</dt><dd>${b}</dd></div>`;
+  hoja({titulo:`Pase de ${x.ambito}`,html:`<dl class="tot">${fila('Momento del pase de lista',x.momento?esc(x.momento):'<span class="small">Sin indicar (pase anterior a este campo)</span>')}${fila('Lista',esc(x.lista))}${fila('Fecha y hora',new Date(x.fecha).toLocaleString('es-ES',{weekday:'long',day:'numeric',month:'long',hour:'2-digit',minute:'2-digit'}))}${fila('Presentes',x.presentes)}${fila('Ausentes',x.ausentes)}${fila('Llegaron tarde',x.tarde)}${fila('Estado',x.enviado?'Enviado ✓':'Pendiente de enviar')}</dl>`,ok:'Cerrar',cancelar:null});
 }
 async function probar(){
   ['movil','url','clave'].forEach(k=>{const e=document.getElementById('env_'+k); if(e) ENV[k]=e.value.trim();}); guardarEnvio();
@@ -612,9 +639,11 @@ document.addEventListener('toggle',e=>{ if(e.target.id==='obsBox') UI.obsAbierto
 
 /* ---------- eventos ---------- */
 document.addEventListener('click',async e=>{
+  const li=e.target.closest('[data-hist]'); if(li&&!e.target.closest('button')){ verPase(li.dataset.hist); return; }
   const b=e.target.closest('button'); if(!b) return;
   if(b.dataset.abrir){ abrir(b.dataset.abrir); return; }
   if(b.dataset.avsel!=null){ UI.avSel=b.dataset.avsel; UI.avNota=''; UI.avMot=null; UI.avQuien=null; render(); window.scrollTo(0,0); return; }
+  if(b.dataset.mom!=null){ const m=UI.modo; if(!m) return; ponMomento(m,b.dataset.mom); if(UI.faltaMom===m) UI.faltaMom=null; const box=document.getElementById('momento'); if(box) box.outerHTML=htmlMomento(m); return; }
   if(b.dataset.tab!=null){ UI.tab[UI.modo]=b.dataset.tab; LS.set('pl_tab_'+UI.modo,b.dataset.tab); render(); window.scrollTo(0,0); return; }
   if(b.classList.contains('person')){
     const m=UI.modo,k=b.dataset.key,st=S[m],s=st.states[k]||'pending';
@@ -646,12 +675,12 @@ document.addEventListener('click',async e=>{
   if(a==='avCerrar'){ UI.avSel=null; render(); return; }
   if(a==='seguir'){ UI.sigue[UI.modo]=true; render(); }
   if(a==='nuevo'){ const m=UI.modo; if(!await hoja({titulo:'¿Empezar un pase nuevo?',html:'<p>Se borrarán todas las marcas de esta lista.</p>',ok:'Dejar en blanco',clase:'dangerfill'})) return;
-    S[m]={states:{},reasons:{},late:{}}; guardarEstado(m); UI.sigue[m]=false; render(); window.scrollTo(0,0); toast('Lista en blanco: puedes empezar el pase'); }
+    S[m]={states:{},reasons:{},late:{}}; guardarEstado(m); ponMomento(m,''); UI.sigue[m]=false; render(); window.scrollTo(0,0); toast('Lista en blanco: puedes empezar el pase'); }
   if(a==='reset'){
     const m=UI.modo,t=UI.tab[m]; if(!await hoja({titulo:`¿Reiniciar el pase de ${ambito(m,t)}?`,html:'<p>Se borrarán las marcas de esta lista.</p>',ok:'Reiniciar',clase:'dangerfill'})) return;
     const keys=new Set(); grupos(m,t).forEach(g=>g.slots.forEach(p=>p&&keys.add(p.key)));
     for(const o of [S[m].states,S[m].reasons,S[m].late]) for(const k of Object.keys(o)) if(keys.has(k)) delete o[k];
-    guardarEstado(m); render();
+    guardarEstado(m); if(t==='all') ponMomento(m,''); render();
   }
   if(a==='borrar'&&await hoja({titulo:'¿Borrar los residentes de este móvil?',html:'<p>Se borrarán también sus fotos. Tendrás que volver a cargar el archivo para usar la app.</p>',ok:'Borrar',clase:'dangerfill'})){
     await dbDel('datos'); await dbDel('casas'); H=null; C=null; render();
@@ -665,7 +694,7 @@ document.addEventListener('change',e=>{
   if(el.id==='fichero'&&el.files[0]){ cargarArchivo(el.files[0]); el.value=''; }
 });
 document.addEventListener('touchstart',()=>{},{passive:true}); /* iOS: activa :active en los botones */
-document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&(e.target.id==='search'||e.target.id==='searchAv')) e.target.blur(); });
+document.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.dataset&&e.target.dataset.hist){ e.preventDefault(); verPase(e.target.dataset.hist); return; } if(e.key==='Enter'&&(e.target.id==='search'||e.target.id==='searchAv')) e.target.blur(); });
 document.addEventListener('input',e=>{ if(e.target.id&&e.target.id.startsWith('env_')) ENV[e.target.id.slice(4)]=e.target.value; if(e.target.id==='searchAv'){ UI.qa=e.target.value; pintarAvisos(); return; } if(e.target.id==='avNota') UI.avNota=e.target.value; if(e.target.id==='avQuien') UI.avQuien=e.target.value; if(e.target.id==='obsTxt') OBS.texto=e.target.value; if(e.target.id==='obsNom') OBS.nombre=e.target.value; if(e.target.id==='obsTipo') OBS.tipo=e.target.value; if(e.target.id==='search'){ UI.q=e.target.value; document.getElementById('grupos').innerHTML=htmlGrupos(UI.modo,UI.tab[UI.modo]); } });
 window.addEventListener('afterprint',()=>document.body.classList.remove('print-absent'));
 window.addEventListener('online',enviarCola);
