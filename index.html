@@ -204,6 +204,11 @@ const ENV=LS.get('pl_envio',{url:'',clave:'',movil:''});
 let COLA=LS.get('pl_cola',[]), HIST=LS.get('pl_hist',[]);
 let AV=LS.get('pl_avisos',{lista:[],porParte:3,t:0});
 const guardarEnvio=()=>{LS.set('pl_envio',ENV);LS.set('pl_cola',COLA);LS.set('pl_hist',HIST);};
+// Separación de apps (06/11/2026): Pasar Lista habla con el servidor propio de Residencia, no con el de Caja.
+// Los móviles que tenían guardada la dirección antigua se pasan solos a la nueva; la clave no cambia.
+const URL_CAJA_ANTIGUA='AKfycbya9f7jE3-Ro_HmTRBG437OaPY_3AONjwaQmUWVUPqv8CILDx71rQOzJDFKUndCsV3mTw', URL_RESIDENCIA='https://script.google.com/macros/s/AKfycbzuyvz2lvxNW9YZS-khM0sRsEjc-0P3jzirdIZN1VtLXtbfa_VgpTa_WMBcrRnyKiVh/exec';
+const urlVigente=u=>String(u||'').indexOf(URL_CAJA_ANTIGUA)>=0?URL_RESIDENCIA:String(u||'');
+if(ENV.url&&ENV.url!==urlVigente(ENV.url)){ ENV.url=urlVigente(ENV.url); guardarEnvio(); }
 
 const MOT={unjustified:'No justificado',justified:'Justificado',home:'En casa'};
 const MOT_CORTO={unjustified:'No justif.',justified:'Justific.',home:'En casa'};
@@ -448,7 +453,7 @@ function descargarCSV(){
 let enviando=false;
 async function post(cuerpo){
   const ac=window.AbortController?new AbortController():null, to=ac?setTimeout(()=>ac.abort(),45000):0;
-  try{ const r=await fetch(ENV.url.trim(),{method:'POST',body:JSON.stringify(Object.assign({clave:ENV.clave.trim(),movil:(ENV.movil||'').trim()||'Sin nombre'},cuerpo)),signal:ac?ac.signal:undefined});
+  try{ const r=await fetch(urlVigente(ENV.url).trim(),{method:'POST',body:JSON.stringify(Object.assign({clave:ENV.clave.trim(),movil:(ENV.movil||'').trim()||'Sin nombre'},cuerpo)),signal:ac?ac.signal:undefined});
     return await r.json(); } finally { clearTimeout(to); }
 }
 async function enviarCola(){
@@ -485,7 +490,7 @@ function verPase(id){
   hoja({titulo:`Pase de ${x.ambito}`,html:`<dl class="tot">${fila('Momento del pase de lista',x.momento?esc(x.momento):'<span class="small">Sin indicar (pase anterior a este campo)</span>')}${fila('Lista',esc(x.lista))}${fila('Fecha y hora',new Date(x.fecha).toLocaleString('es-ES',{weekday:'long',day:'numeric',month:'long',hour:'2-digit',minute:'2-digit'}))}${fila('Presentes',x.presentes)}${fila('Ausentes',x.ausentes)}${fila('Llegaron tarde',x.tarde)}${fila('Estado',x.enviado?'Enviado ✓':'Pendiente de enviar')}</dl>`,ok:'Cerrar',cancelar:null});
 }
 async function probar(){
-  ['movil','url','clave'].forEach(k=>{const e=document.getElementById('env_'+k); if(e) ENV[k]=e.value.trim();}); guardarEnvio();
+  ['movil','url','clave'].forEach(k=>{const e=document.getElementById('env_'+k); if(e) ENV[k]=e.value.trim();}); ENV.url=urlVigente(ENV.url); guardarEnvio();
   const res=(c,t)=>{ UI.envRes={c,t}; const box=document.getElementById('envRes'); if(box){ box.className=c; box.textContent=t; } };
   if(!ENV.url||!ENV.clave){ res('small bad','Pega la dirección y la clave.'); return; }
   res('small','Probando…');
@@ -855,7 +860,7 @@ setInterval(enviarCola,60000);
 /* enlace de configuración: ?conectar=… */
 (function(){ try{ const c=new URLSearchParams(location.search).get('conectar'); if(!c) return;
   const b=c.replace(/-/g,'+').replace(/_/g,'/'), j=JSON.parse(decodeURIComponent(escape(atob(b+'==='.slice((b.length+3)%4)))));
-  if(!j.u||!j.k) return; ENV.url=j.u; ENV.clave=j.k; guardarEnvio(); history.replaceState(null,'',location.pathname); UI.modo=null; UI.conectado=true;
+  if(!j.u||!j.k) return; ENV.url=urlVigente(j.u); ENV.clave=j.k; guardarEnvio(); history.replaceState(null,'',location.pathname); UI.modo=null; UI.conectado=true;
 }catch(e){} })();
 
 (async()=>{
