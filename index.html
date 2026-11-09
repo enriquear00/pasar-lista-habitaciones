@@ -115,6 +115,9 @@ details.mas .row{margin-top:6px}
 .ag-chips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
 .ag-chip{border:1px solid #d5dce8;border-radius:999px;padding:4px 10px;font-size:.9rem;background:#fff}
 .ag-chip.ok{border-color:#9fd3b8;background:#eaf6ef}.ag-chip.bad{border-color:#e6b4b4;background:#fdf0ef}
+.wa-barra{height:10px;background:#e6ebf2;border-radius:999px;overflow:hidden;margin:10px 0 4px}.wa-barra span{display:block;height:100%;background:#1f7a52}
+.wa-l{list-style:none;margin:6px 0 12px;padding:0}.wa-pend{border-top:1px solid #e0e5ed;padding:10px 0}.wa-pend .row{margin-top:6px}
+a.action{display:inline-flex;align-items:center;text-decoration:none}
 .ag-l{margin:8px 0;padding-left:18px;font-size:.93rem;line-height:1.45}
 .action[disabled]{opacity:.55;pointer-events:none}
 .avlist{display:flex;flex-direction:column;gap:8px}
@@ -607,16 +610,12 @@ function agSegmentos(t){ const uni=/[^\n\r !"#$%&'()*+,\-./0-9:;<=>?@A-Z\[\\\]^_
 function agGrupoTxt(a,g){ return a==='todos'?'Todos los residentes activos':a==='casa'?g:'Curso '+g; }
 function agInvalidar(){ if(AG.vista){ AG.vista=null; const v=document.getElementById('agVista'); if(v) v.innerHTML=agVistaHTML(); } AG.error=''; }
 
-function renderGenerales(){
-  document.getElementById('titulo').textContent='Avisos generales';
-  document.getElementById('sub').textContent='SMS a las familias o a los residentes mayores de edad. Primero se ve la vista previa; nada sale sin confirmar.';
-  const {casas,cursos}=agGrupos(), cod=agCodigo();
+function agSmsHTML(){
+  const {casas,cursos}=agGrupos();
   let h='';
-  if(!ENV.url||!ENV.clave) h+='<p class="aviso">Este móvil no tiene configurado el envío. Configúralo en Inicio.</p>';
   if(AG.pend) h+=`<div class="aviso"><b>Hay un envío sin confirmar por el servidor</b> (${esc(agGrupoTxt(AG.pend.alcance,AG.pend.grupo))}). Puede que se cortara la conexión. Comprobarlo no lo envía dos veces.
     <div class="row" style="margin-top:8px"><button class="action primary" data-act="agReintentar">Comprobar ahora</button><button class="action" data-act="agOlvidar">Descartar</button></div></div>`;
-  h+=`<div class="card">
-    <div class="field"><label for="agCod">Código de avisos generales</label><input id="agCod" type="password" autocomplete="off" value="${esc(cod)}" placeholder="Código del equipo (no es la clave del envío)"><span class="small">Se recuerda solo mientras la app esté abierta.</span></div>
+  h+=`<div class="card"><h3>SMS a un grupo</h3>
     <div class="field"><label for="agQuien">Quién envía</label><input id="agQuien" value="${esc(AG.quien)}" placeholder="Tu nombre" autocomplete="name"></div>
     <div class="field"><label for="agAlc">Destinatarios</label><select id="agAlc">
       <option value="todos"${AG.alcance==='todos'?' selected':''}>Todos los residentes activos</option>
@@ -625,12 +624,12 @@ function renderGenerales(){
     ${AG.alcance==='todos'?'':`<div class="field"><label for="agGrp">${AG.alcance==='casa'?'Casa':'Curso'}</label><select id="agGrp"><option value="">Elige…</option>${(AG.alcance==='casa'?casas:cursos).map(x=>`<option${AG.grupo===x?' selected':''}>${esc(x)}</option>`).join('')}</select></div>`}
     <div class="field"><label for="agTxt">Mensaje</label><textarea id="agTxt" maxlength="${AGM}" rows="5" placeholder="Ej.: Residencia La Santa Espina: les recordamos que el domingo celebramos la Eucaristía a las 12:00 con las familias.">${esc(AG.texto)}</textarea>
       <span class="small" id="agCnt">${agContador()}</span></div>
-    <p class="small">Recibe el SMS el residente si es mayor de edad y su padre, madre o tutor si es menor. Los casos dudosos quedan para contacto manual.</p>
+    <p class="small">Lo recibe el padre, madre o tutor de cada residente y, si el residente es mayor de edad, también él. Los casos dudosos quedan para contacto manual.</p>
     <div class="row"><button class="action primary" data-act="agVista"${AG.cargando?' disabled':''}>${AG.cargando?'Preparando…':'Ver vista previa'}</button></div>
     <p class="small bad" id="agErr">${esc(AG.error)}</p></div>
     <div id="agVista">${agVistaHTML()}</div>
     <div id="agEstado">${agEstadoHTML()}</div>`;
-  document.getElementById('main').innerHTML=h;
+  return h;
 }
 function agContador(){ const n=AG.texto.length, s=agSegmentos(AG.texto); return `${n}/${AGM} caracteres${n?` · ${s} ${s===1?'SMS':'SMS encadenados'} por destinatario`:''}`; }
 function agVistaHTML(){
@@ -666,7 +665,7 @@ function agLeerForm(){ const c=document.getElementById('agCod'), q=document.getE
 async function agPedirVista(){
   agLeerForm();
   if(!ENV.url||!ENV.clave){ toast('Primero configura el envío en Inicio.'); return; }
-  if(!agCodigo()){ toast('Escribe el código de avisos generales'); document.getElementById('agCod').focus(); return; }
+  if(!agCodigo()){ toast('Escribe el código de avisos'); const c=document.getElementById('agCod'); if(c) c.focus(); return; }
   if(!AG.texto.trim()){ toast('Escribe el mensaje'); document.getElementById('agTxt').focus(); return; }
   if(AG.alcance!=='todos'&&!AG.grupo){ toast(AG.alcance==='casa'?'Elige la casa':'Elige el curso'); return; }
   if(navigator.onLine===false){ toast('Sin internet: la vista previa necesita conexión'); return; }
@@ -714,6 +713,147 @@ async function agVerEstado(lote){
   if(!agCodigo()){ toast('Escribe el código de avisos generales'); return; }
   try{ const r=await post({tipo:'avisoGeneralEstado',codigo:agCodigo(),lote}); if(r&&r.ok){ AG.estado=r; agPintar('agEstado',agEstadoHTML()); } else toast(agErr(r)); }
   catch(e){ toast('No se pudo conectar.'); }
+}
+
+/* ---------- avisos por WhatsApp (solo el director: código de avisos, validado en el servidor) ---------- */
+// <wa-helpers>
+function waEnlaceDirecto(tel,texto){ return 'https://wa.me/'+String(tel||'').replace(/\D/g,'')+'?text='+encodeURIComponent(texto); }
+function waEnlaceLibre(texto){ return 'whatsapp://send?text='+encodeURIComponent(texto); }
+function waEnlaceSMS(tel,texto){ return 'sms:'+String(tel||'').replace(/[^\d+]/g,'')+'?&body='+encodeURIComponent(texto); }
+function waBarra(c,t){ const p=t?Math.round(c*100/t):0; return `<div class="wa-barra" role="img" aria-label="${c} de ${t} confirmados"><span style="width:${p}%"></span></div><p class="small"><b>${c} de ${t}</b> confirmados</p>`; }
+function waRecordatorio(texto,url){ const t=String(texto||'').replace(/\s+/g,' ').trim(), corto=t.length>70?t.slice(0,70).trim()+'…':t;
+  return `Residencia La Santa Espina: os recordamos el aviso «${corto}». Confirmad que lo habéis leído aquí: ${url}`; }
+// </wa-helpers>
+const WA={entrado:false,tab:'nuevo',tipo:'importante',alcance:'todos',grupo:'',texto:LS.get('pl_wa_texto',''),vista:null,creado:null,avisos:null,det:null,ocupado:false,error:''};
+const WA_ERR=Object.assign({},AG_ERR,{codigo:'El código de avisos no es correcto.',aviso:'No se encuentra ese aviso.',alcance:'Elige a quién va el aviso.'});
+const waErr=r=>WA_ERR[r&&r.error]||'El servicio ha respondido con un error.';
+const waFecha=f=>f?new Date(f).toLocaleString('es-ES',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'';
+const waGrupoTxt=(a,g)=>a==='prueba'?'Solo el móvil de prueba':agGrupoTxt(a,g);
+const waQuien=p=>p.tipo==='Residente'?`${p.nombre} (residente)`:p.tipo==='Tutor'?`Tutor de ${p.nombre}`:p.nombre;
+async function waCopiar(t){
+  try{ await navigator.clipboard.writeText(t); return true; }
+  catch(e){ const a=document.createElement('textarea'); a.value=t; a.setAttribute('readonly',''); a.style.position='fixed'; a.style.opacity='0'; document.body.appendChild(a); a.select(); let ok=false; try{ ok=document.execCommand('copy'); }catch(x){} a.remove(); return ok; }
+}
+async function waPost(cuerpo){
+  if(!ENV.url||!ENV.clave){ toast('Primero configura el envío en Inicio.'); return null; }
+  if(navigator.onLine===false){ toast('Sin internet: los avisos necesitan conexión'); return null; }
+  WA.ocupado=true; WA.error=''; renderGenerales();
+  try{ const r=await post(Object.assign({codigo:agCodigo()},cuerpo)); if(!r||!r.ok){ WA.error=waErr(r); if(r&&(r.error==='codigo'||r.error==='bloqueado'||r.error==='sin_codigo')) WA.entrado=false; } return r; }
+  catch(e){ WA.error='No se pudo conectar. Comprueba la conexión.'; return null; }
+  finally{ WA.ocupado=false; if(UI.modo==='gen') renderGenerales(); }
+}
+
+function renderGenerales(){
+  document.getElementById('titulo').textContent='Avisos';
+  document.getElementById('sub').textContent='Avisos a las familias y a los residentes mayores de edad por WhatsApp o SMS. Solo para dirección.';
+  let h='';
+  if(!ENV.url||!ENV.clave) h+='<p class="aviso">Este móvil no tiene configurado el envío. Configúralo en Inicio.</p>';
+  if(!WA.entrado||!agCodigo()){
+    h+=`<div class="card"><h3>Acceso de dirección</h3>
+      <div class="field"><label for="agCod">Código de avisos</label><input id="agCod" type="password" autocomplete="off" value="${esc(agCodigo())}" placeholder="No es la clave del envío"><span class="small">Se recuerda solo mientras la app esté abierta.</span></div>
+      <div class="row"><button class="action primary" data-act="waEntrar"${WA.ocupado?' disabled':''}>${WA.ocupado?'Comprobando…':'Entrar'}</button></div>
+      <p class="small bad">${esc(WA.error)}</p></div>`;
+    document.getElementById('main').innerHTML=h; return;
+  }
+  const tabs=[['nuevo','Nuevo aviso'],['enviados','Avisos enviados'],['contactos','Contactos'],['sms','SMS']];
+  h+=`<div class="tabs">${tabs.map(([v,x])=>`<button class="tab${v===WA.tab?' active':''}" data-wat="${v}">${esc(x)}</button>`).join('')}<button class="tab" data-act="waSalir">Salir</button></div>`;
+  if(WA.tab==='sms') h+=agSmsHTML();
+  else h+=(WA.tab==='nuevo'?waNuevoHTML():WA.tab==='enviados'?waEnviadosHTML():waContactosHTML())+`<p class="small bad">${esc(WA.error)}</p>`;
+  document.getElementById('main').innerHTML=h;
+}
+function waNuevoHTML(){
+  const {casas,cursos}=agGrupos(), imp=WA.tipo==='importante';
+  let h=`<div class="card">
+    <div class="field"><label for="waTipo">Tipo de aviso</label><select id="waTipo">
+      <option value="importante"${imp?' selected':''}>Importante: con confirmación «Lo he leído»</option>
+      <option value="recordatorio"${imp?'':' selected'}>Recordatorio: se publica en la comunidad</option></select></div>`;
+  if(imp) h+=`<div class="field"><label for="waAlc">A quién va</label><select id="waAlc">
+      <option value="todos"${WA.alcance==='todos'?' selected':''}>Todos los residentes activos</option>
+      <option value="casa"${WA.alcance==='casa'?' selected':''}>Una casa</option>
+      <option value="curso"${WA.alcance==='curso'?' selected':''}>Un curso</option>
+      <option value="prueba"${WA.alcance==='prueba'?' selected':''}>Prueba: solo el móvil de prueba</option></select></div>
+    ${WA.alcance==='casa'||WA.alcance==='curso'?`<div class="field"><label for="waGrp">${WA.alcance==='casa'?'Casa':'Curso'}</label><select id="waGrp"><option value="">Elige…</option>${(WA.alcance==='casa'?casas:cursos).map(x=>`<option${WA.grupo===x?' selected':''}>${esc(x)}</option>`).join('')}</select></div>`:''}`;
+  h+=`<div class="field"><label for="waTxt">Mensaje</label><textarea id="waTxt" maxlength="${AGM}" rows="5" placeholder="Ej.: Residencia La Santa Espina: el viernes 20 la residencia cierra a las 15:00.">${esc(WA.texto)}</textarea><span class="small">${WA.texto.length}/${AGM} caracteres</span></div>`;
+  if(imp){
+    h+=`<p class="small"><b>No pongas datos personales de ningún alumno:</b> el enlace de confirmación lo puede abrir cualquiera que lo reciba.</p>
+      <div class="row"><button class="action" data-act="waVista"${WA.ocupado?' disabled':''}>Ver a quién llega</button><button class="action primary" data-act="waCrear"${WA.ocupado?' disabled':''}>${WA.ocupado?'Preparando…':'Crear aviso'}</button></div></div>`;
+    const v=WA.vista;
+    if(v&&v.alcance===WA.alcance&&v.grupo===WA.grupo){ const c=v.recuento;
+      h+=`<div class="card"><h3>A quién llega</h3><dl class="tot">
+        <div><dt>Tutores de menores</dt><dd><b>${c.tutoresMenores}</b></dd></div><div><dt>Tutores de mayores de edad</dt><dd><b>${c.tutoresMayores}</b></dd></div>
+        <div><dt>Residentes mayores de edad</dt><dd><b>${c.residentesMayores}</b></dd></div><div><dt>Mensajes distintos</dt><dd><b>${v.mensajes}</b></dd></div>
+        <div><dt>Contacto manual</dt><dd>${c.manuales}</dd></div><div><dt>Números compartidos</dt><dd>${c.compartidos}</dd></div></dl>
+        ${v.manuales.length?`<details class="mas"><summary>Contacto manual (${v.manuales.length}) ›</summary><ul class="ag-l">${v.manuales.map(x=>`<li><b>${esc(waQuien(x))}</b>${x.nota?' — '+esc(x.nota):''}</li>`).join('')}</ul></details>`:''}
+        <p class="small">La lista de difusión de WhatsApp Business solo llega a quien tiene guardado el número de la residencia. Quien no lo reciba aparecerá como pendiente.</p></div>`; }
+    const k=WA.creado;
+    if(k) h+=`<div class="card wa-creado"><h3>Aviso creado</h3><p class="small">${esc(waGrupoTxt(k.alcance,k.grupo))} · ${esc(waFecha(k.f))}</p><div class="ag-sms">${esc(k.texto)}</div>
+      <p class="small">1. Copia el texto. 2. Abre WhatsApp Business <b>en el móvil de la residencia</b>. 3. Pégalo en la lista de difusión y envíalo.</p>
+      <div class="row"><button class="action primary" data-act="waCopiar">Copiar texto con enlace</button><a class="action" href="${esc(waEnlaceLibre(k.texto))}">Abrir WhatsApp</a></div>
+      <div class="row"><button class="action" data-wadet="${esc(k.id)}">Ver confirmaciones</button></div></div>`;
+  } else h+=`<p class="small">Elige la comunidad de la residencia en WhatsApp y envíalo. Los recordatorios no llevan confirmación.</p>
+      <div class="row"><button class="action primary" data-act="waRecordatorio">Copiar y abrir WhatsApp</button></div></div>`;
+  return h;
+}
+function waEnviadosHTML(){
+  const d=WA.det;
+  if(d){
+    const r=d.resumen, en={}; (d.enlaces||[]).forEach(x=>{ en[x.telefono]=x.url; });
+    const casas={}; r.pendientes.forEach(p=>{ (casas[p.casa||'Sin casa']=casas[p.casa||'Sin casa']||[]).push(p); });
+    const vistos={};
+    const li=p=>{ const u=en[p.telefono], t=u?waRecordatorio(d.aviso.texto,u):'', rep=p.telefono&&vistos[p.telefono]; if(p.telefono) vistos[p.telefono]=1;
+      return `<li class="wa-pend"><b>${esc(waQuien(p))}</b>${rep?' <span class="small">(mismo número que otro de la lista)</span>':''}
+        <div class="row">${u&&!rep?`<a class="action send" href="${esc(waEnlaceDirecto(p.telefono,t))}" target="_blank" rel="noopener">WhatsApp</a><a class="action" href="${esc(waEnlaceSMS(p.telefono,t))}">SMS</a>`:p.telefono?'':'<span class="small">Sin teléfono: contacto manual</span>'}
+        <button class="action" data-wamarcar="${esc(p.telefono)}" data-wares="${esc(p.nombre)}" data-wadest="${esc(p.tipo)}">Marcar como confirmado</button></div></li>`; };
+    return `<div class="card"><div class="row"><button class="action" data-act="waVolver">‹ Todos los avisos</button><button class="action" data-wadet="${esc(d.aviso.id)}">Actualizar</button></div>
+      <p class="small">${esc(waGrupoTxt(d.aviso.alcance,d.aviso.grupo))} · ${esc(waFecha(d.aviso.fecha))}${d.aviso.quien?' · '+esc(d.aviso.quien):''}</p>
+      <div class="ag-sms">${esc(d.aviso.texto)}</div>${waBarra(r.confirmados,r.total)}
+      <p class="small">${r.completos} de ${r.residentes} residentes con todos sus destinatarios confirmados. Con un mayor de edad hace falta que confirmen él y su tutor.</p></div>
+      ${r.pendientes.length?`<div class="card"><h3>Pendientes (${r.pendientes.length})</h3><p class="small">El botón de WhatsApp lleva un enlace personal: al pulsarlo, la familia confirma sin escribir ningún código.</p>
+        ${Object.keys(casas).map(c=>`<h4>${esc(c)}</h4><ul class="wa-l">${casas[c].map(li).join('')}</ul>`).join('')}</div>`:'<div class="card"><p><b>Todos han confirmado.</b></p></div>'}`;
+  }
+  const L=WA.avisos;
+  if(!L) return `<div class="card"><p class="small">${WA.ocupado?'Cargando…':''}</p><div class="row"><button class="action" data-act="waRefrescar">Cargar avisos</button></div></div>`;
+  if(!L.length) return '<div class="card"><p class="small">Todavía no hay avisos importantes.</p></div>';
+  return `<div class="card"><div class="row"><button class="action" data-act="waRefrescar">Actualizar</button></div><ul class="hist">${L.map(a=>`<li><b>${esc(waFecha(a.fecha))}</b> · ${esc(waGrupoTxt(a.alcance,a.grupo))}${waBarra(a.confirmados,a.total)}<button class="action" data-wadet="${esc(a.id)}">Ver pendientes</button></li>`).join('')}</ul></div>`;
+}
+function waContactosHTML(){
+  return `<div class="card"><h3>Contactos para WhatsApp Business</h3>
+    <p class="small">Descarga un archivo con un contacto por número: tutores y residentes mayores de edad, sin repetidos y con la casa en el nombre. Cada uno lleva su etiqueta: «Menor de edad · tutor», «Mayor de edad · tutor» o «Mayor de edad · residente».</p>
+    <ol class="small"><li>Descarga el archivo.</li><li>En el ordenador, entra en contacts.google.com con la cuenta de Google del móvil de la residencia y pulsa <b>Importar</b>.</li><li>En el móvil, los contactos aparecen solos y ya puedes montar las listas de difusión.</li></ol>
+    <p class="small"><b>Contiene teléfonos de familias:</b> bórralo del móvil o del ordenador cuando lo hayas importado.</p>
+    <div class="row"><button class="action primary" data-act="waContactos"${WA.ocupado?' disabled':''}>Descargar contactos para Google</button></div></div>`;
+}
+async function waEntrar(){
+  agLeerForm(); if(!agCodigo()){ toast('Escribe el código de avisos'); return; }
+  const r=await waPost({tipo:'waEstado'}); if(r&&r.ok){ WA.entrado=true; WA.avisos=r.avisos; WA.error=''; renderGenerales(); }
+}
+async function waVer(id){ const r=await waPost({tipo:'waEstado',id}); if(r&&r.ok){ WA.det=r; WA.tab='enviados'; renderGenerales(); window.scrollTo(0,0); } }
+function waDatos(){ return {alcance:WA.alcance,grupo:WA.alcance==='casa'||WA.alcance==='curso'?WA.grupo:'',texto:WA.texto.trim()}; }
+function waRevisar(){ const d=waDatos(); if(!d.texto){ toast('Escribe el mensaje'); return null; } if((d.alcance==='casa'||d.alcance==='curso')&&!d.grupo){ toast(d.alcance==='casa'?'Elige la casa':'Elige el curso'); return null; } return d; }
+async function waAccion(a,b){
+  if(a==='waEntrar') return waEntrar();
+  if(a==='waSalir'){ agPonCodigo(''); WA.entrado=false; WA.avisos=null; WA.det=null; WA.creado=null; WA.vista=null; renderGenerales(); return; }
+  if(a==='waVista'){ const d=waRevisar(); if(!d) return; const r=await waPost(Object.assign({tipo:'waVista'},d)); if(r&&r.ok){ WA.vista=r; renderGenerales(); } return; }
+  if(a==='waCrear'){ const d=waRevisar(); if(!d) return;
+    if(!await hoja({titulo:'¿Crear el aviso importante?',html:`<p>${esc(waGrupoTxt(d.alcance,d.grupo))}.</p><div class="ag-sms">${esc(d.texto)}</div><p class="small">Se prepara el texto con el enlace «Lo he leído». No se envía nada hasta que lo mandes tú desde WhatsApp.</p>`,ok:'Crear'})) return;
+    const r=await waPost(Object.assign({tipo:'waCrear',quien:AG.quien},d));
+    if(r&&r.ok){ WA.creado={id:r.id,texto:r.texto,alcance:d.alcance,grupo:d.grupo,f:Date.now()}; WA.avisos=null; WA.texto=''; LS.set('pl_wa_texto',''); renderGenerales(); toast('Aviso creado. Cópialo y envíalo por la lista de difusión'); }
+    return; }
+  if(a==='waCopiar'){ if(WA.creado) toast(await waCopiar(WA.creado.texto)?'Texto copiado':'No se pudo copiar: mantén pulsado el texto para copiarlo'); return; }
+  if(a==='waRecordatorio'){ const t=WA.texto.trim(); if(!t){ toast('Escribe el mensaje'); return; } await waCopiar(t); location.href=waEnlaceLibre(t); return; }
+  if(a==='waRefrescar'){ const r=await waPost({tipo:'waEstado'}); if(r&&r.ok){ WA.avisos=r.avisos; renderGenerales(); } return; }
+  if(a==='waVolver'){ WA.det=null; renderGenerales(); if(!WA.avisos) waAccion('waRefrescar'); return; }
+  if(a==='waContactos'){ const r=await waPost({tipo:'waContactos'}); if(r&&r.ok){
+      const url=URL.createObjectURL(new Blob([r.csv],{type:'text/csv;charset=utf-8'})), l=document.createElement('a');
+      l.href=url; l.download='contactos-residencia-whatsapp.csv'; document.body.appendChild(l); l.click(); l.remove(); setTimeout(()=>URL.revokeObjectURL(url),60000); toast('Archivo descargado'); }
+    return; }
+}
+async function waMarcar(b){
+  const d=WA.det; if(!d) return;
+  const quien=b.dataset.wadest==='Residente'?`${b.dataset.wares} (residente)`:`el tutor de ${b.dataset.wares}`;
+  if(!await hoja({titulo:'¿Marcar como confirmado?',html:`<p>Úsalo si <b>${esc(quien)}</b> te ha confirmado por teléfono o en persona. Quedará anotado que se marcó a mano${b.dataset.wamarcar?'; se marcan todos los avisos de ese número en este aviso':''}.</p>`,ok:'Marcar'})) return;
+  const r=await waPost({tipo:'waMarcar',id:d.aviso.id,telefono:b.dataset.wamarcar||'',residente:b.dataset.wares,destinatario:b.dataset.wadest,quien:AG.quien});
+  if(r&&r.ok) waVer(d.aviso.id);
 }
 
 /* ---------- lista de residentes desde la hoja de Google ---------- */
@@ -792,6 +932,9 @@ document.addEventListener('click',async e=>{
   const b=e.target.closest('button'); if(!b) return;
   if(b.dataset.abrir){ abrir(b.dataset.abrir); return; }
   if(b.dataset.aglote){ agVerEstado(b.dataset.aglote); return; }
+  if(b.dataset.wat){ WA.tab=b.dataset.wat; WA.error=''; if(WA.tab==='enviados'&&!WA.avisos&&!WA.det) waAccion('waRefrescar'); else renderGenerales(); window.scrollTo(0,0); return; }
+  if(b.dataset.wadet){ waVer(b.dataset.wadet); return; }
+  if(b.dataset.wamarcar!=null){ waMarcar(b); return; }
   if(b.dataset.avsel!=null){ UI.avSel=b.dataset.avsel; UI.avNota=''; UI.avMot=null; UI.avQuien=null; render(); window.scrollTo(0,0); return; }
   if(b.dataset.mom!=null){ const m=UI.modo; if(!m) return; ponMomento(m,b.dataset.mom); if(UI.faltaMom===m) UI.faltaMom=null; const box=document.getElementById('momento'); if(box) box.outerHTML=htmlMomento(m); return; }
   if(b.dataset.tab!=null){ UI.tab[UI.modo]=b.dataset.tab; LS.set('pl_tab_'+UI.modo,b.dataset.tab); render(); window.scrollTo(0,0); return; }
@@ -812,6 +955,7 @@ document.addEventListener('click',async e=>{
     return;
   }
   const a=b.dataset.act; if(!a) return;
+  if(a.startsWith('wa')){ waAccion(a,b); return; }
   if(a==='inicio'){ UI.modo=null; render(); window.scrollTo(0,0); entrar(); if(Date.now()-LS.get('pl_sync',0)>10*60e3) sincronizarResidentes(false); }
   if(a==='cargar') document.getElementById('fichero').click();
   if(a==='probar') probar();
@@ -846,13 +990,16 @@ document.addEventListener('change',e=>{
   if(el.id==='avMot'){ UI.avMot=el.value; return; }
   if(el.id==='agAlc'){ AG.alcance=el.value; AG.grupo=''; agInvalidar(); renderGenerales(); return; }
   if(el.id==='agGrp'){ AG.grupo=el.value; agInvalidar(); return; }
+  if(el.id==='waTipo'){ WA.tipo=el.value; renderGenerales(); return; }
+  if(el.id==='waAlc'){ WA.alcance=el.value; WA.grupo=''; WA.vista=null; renderGenerales(); return; }
+  if(el.id==='waGrp'){ WA.grupo=el.value; WA.vista=null; return; }
   if(el.classList.contains('absence-reason')){ S[m].reasons[el.dataset.key]=el.value; guardarEstado(m); pintarPersona(m,el.dataset.key); pintarResumen(m); }
   if(el.classList.contains('late-time')){ S[m].late[el.dataset.key]=el.value; guardarEstado(m); pintarPersona(m,el.dataset.key); }
   if(el.id==='fichero'&&el.files[0]){ cargarArchivo(el.files[0]); el.value=''; }
 });
 document.addEventListener('touchstart',()=>{},{passive:true}); /* iOS: activa :active en los botones */
 document.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.dataset&&e.target.dataset.hist){ e.preventDefault(); verPase(e.target.dataset.hist); return; } if(e.key==='Enter'&&(e.target.id==='search'||e.target.id==='searchAv')) e.target.blur(); });
-document.addEventListener('input',e=>{ if(e.target.id==='agCod'||e.target.id==='agQuien'){ agLeerForm(); return; } if(e.target.id==='agTxt'){ AG.texto=e.target.value; LS.set('pl_ag_texto',AG.texto); const c=document.getElementById('agCnt'); if(c) c.textContent=agContador(); agInvalidar(); return; } if(e.target.id&&e.target.id.startsWith('env_')) ENV[e.target.id.slice(4)]=e.target.value; if(e.target.id==='searchAv'){ UI.qa=e.target.value; pintarAvisos(); return; } if(e.target.id==='avNota') UI.avNota=e.target.value; if(e.target.id==='avQuien') UI.avQuien=e.target.value; if(e.target.id==='obsTxt') OBS.texto=e.target.value; if(e.target.id==='obsNom') OBS.nombre=e.target.value; if(e.target.id==='obsTipo') OBS.tipo=e.target.value; if(e.target.id==='search'){ UI.q=e.target.value; document.getElementById('grupos').innerHTML=htmlGrupos(UI.modo,UI.tab[UI.modo]); } });
+document.addEventListener('input',e=>{ if(e.target.id==='waTxt'){ WA.texto=e.target.value; LS.set('pl_wa_texto',WA.texto); const n=e.target.nextElementSibling; if(n) n.textContent=`${WA.texto.length}/${AGM} caracteres`; return; } if(e.target.id==='agCod'||e.target.id==='agQuien'){ agLeerForm(); return; } if(e.target.id==='agTxt'){ AG.texto=e.target.value; LS.set('pl_ag_texto',AG.texto); const c=document.getElementById('agCnt'); if(c) c.textContent=agContador(); agInvalidar(); return; } if(e.target.id&&e.target.id.startsWith('env_')) ENV[e.target.id.slice(4)]=e.target.value; if(e.target.id==='searchAv'){ UI.qa=e.target.value; pintarAvisos(); return; } if(e.target.id==='avNota') UI.avNota=e.target.value; if(e.target.id==='avQuien') UI.avQuien=e.target.value; if(e.target.id==='obsTxt') OBS.texto=e.target.value; if(e.target.id==='obsNom') OBS.nombre=e.target.value; if(e.target.id==='obsTipo') OBS.tipo=e.target.value; if(e.target.id==='search'){ UI.q=e.target.value; document.getElementById('grupos').innerHTML=htmlGrupos(UI.modo,UI.tab[UI.modo]); } });
 window.addEventListener('afterprint',()=>document.body.classList.remove('print-absent'));
 window.addEventListener('online',enviarCola);
 setInterval(enviarCola,60000);

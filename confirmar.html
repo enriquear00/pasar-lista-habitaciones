@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self'; connect-src https://script.google.com https://script.googleusercontent.com; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex,nofollow">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Aviso de la Residencia La Santa Espina</title>
+<style>
+:root{--navy:#243957}
+*{box-sizing:border-box}
+body{margin:0;font:17px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#172033;background:#f6f5f3}
+header{background:#f2f0ee;border-bottom:2px solid var(--navy);padding:calc(14px + env(safe-area-inset-top,0px)) 16px 12px}
+.brand{font-family:Georgia,"Times New Roman",serif;font-variant:small-caps;font-weight:700;letter-spacing:.08em;color:var(--navy);font-size:15px}
+main{max-width:560px;margin:auto;padding:16px}
+.card{background:#fff;border:1px solid #e0e5ed;border-radius:14px;padding:16px;margin-top:14px}
+.texto{white-space:pre-wrap;word-break:break-word;font-size:1.05rem}
+label{display:block;font-weight:600;margin-bottom:6px}
+input{font:inherit;font-size:22px;letter-spacing:.2em;text-transform:uppercase;width:100%;padding:10px 12px;border:1px solid #cbd3e1;border-radius:10px}
+button{font:inherit;font-size:1.1rem;font-weight:700;width:100%;min-height:56px;margin-top:14px;border-radius:12px;border:0;background:#1f7a52;color:#fff;cursor:pointer}
+button:disabled{opacity:.6}
+.small{font-size:.95rem;color:#5b667a}
+.bad{color:#b42318}.ok{color:#1f6b46}
+.hecho{text-align:center;font-size:1.2rem;font-weight:700;color:#1f6b46}
+</style>
+</head>
+<body>
+<header><div class="brand">Residencia La Santa Espina</div></header>
+<main id="main"><p class="small">Cargando el aviso…</p></main>
+<script>
+'use strict';
+const SERVIDOR='https://script.google.com/macros/s/AKfycbzuyvz2lvxNW9YZS-khM0sRsEjc-0P3jzirdIZN1VtLXtbfa_VgpTa_WMBcrRnyKiVh/exec';
+const q=new URLSearchParams(location.search), aviso=(q.get('a')||'').slice(0,40);
+const guardado=()=>{ try{ return localStorage.getItem('wa_codigo')||''; }catch(e){ return ''; } };
+const guarda=c=>{ try{ localStorage.setItem('wa_codigo',c); }catch(e){} };
+let codigo=(q.get('c')||'').slice(0,12)||guardado();
+if(q.get('c')){ guarda(codigo); history.replaceState(null,'','?a='+encodeURIComponent(aviso)); }
+const main=document.getElementById('main');
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+async function pide(cuerpo){ const r=await fetch(SERVIDOR,{method:'POST',body:JSON.stringify(cuerpo)}); return r.json(); }
+const ERR={codigo:'Ese código no es correcto para este aviso. Revísalo o espera al enlace personal que te enviará la residencia.',bloqueado:'Demasiados intentos. Inténtalo dentro de una hora.',aviso:'No encontramos este aviso. Puede que el enlace esté incompleto.'};
+function pinta(texto,msg,clase){
+  main.innerHTML=`<div class="card"><div class="texto">${esc(texto)}</div></div>
+    <div class="card"><label for="cod">Tu código</label><input id="cod" autocomplete="off" autocapitalize="characters" maxlength="12" value="${esc(codigo)}" placeholder="ABC123">
+    <p class="small">${codigo?'Comprueba que es tu código y pulsa el botón.':'Si no tienes código, no pasa nada: la residencia te enviará un enlace personal para confirmar con un toque.'}</p>
+    <button id="leido">Lo he leído</button><p id="msg" class="${clase||'small'}">${esc(msg||'')}</p></div>`;
+  document.getElementById('leido').onclick=confirmar;
+}
+async function confirmar(){
+  const b=document.getElementById('leido'), c=document.getElementById('cod').value.trim();
+  if(!c){ document.getElementById('msg').textContent='Escribe tu código.'; return; }
+  b.disabled=true; b.textContent='Enviando…';
+  try{ const r=await pide({tipo:'waConfirmar',a:aviso,c});
+    if(r&&r.ok){ codigo=c; guarda(c); main.innerHTML=`<div class="card"><p class="hecho">¡Gracias! Hemos registrado que lo has leído.</p><p class="small" style="text-align:center">Ya puedes cerrar esta página.</p></div>`; return; }
+    document.getElementById('msg').className='bad'; document.getElementById('msg').textContent=ERR[r&&r.error]||'No se pudo registrar. Inténtalo de nuevo.';
+  }catch(e){ document.getElementById('msg').className='bad'; document.getElementById('msg').textContent='Sin conexión. Inténtalo de nuevo.'; }
+  b.disabled=false; b.textContent='Lo he leído';
+}
+(async()=>{
+  if(!aviso){ main.innerHTML='<div class="card"><p class="bad">El enlace está incompleto.</p></div>'; return; }
+  try{ const r=await pide({tipo:'waLeer',a:aviso});
+    if(r&&r.ok) pinta(r.texto); else main.innerHTML=`<div class="card"><p class="bad">${esc(ERR[r&&r.error]||'No se pudo cargar el aviso.')}</p></div>`;
+  }catch(e){ main.innerHTML='<div class="card"><p class="bad">No se pudo cargar el aviso. Comprueba la conexión y vuelve a abrir el enlace.</p></div>'; }
+})();
+</script>
+</body>
+</html>
