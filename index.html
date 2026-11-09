@@ -200,6 +200,8 @@ const marcasDe=m=>Object.keys(S[m].states).length, tsMarcas=m=>LS.get('pl_ts_'+m
 function marcasViejas(m){ const n=marcasDe(m); if(!n) return false; const ts=tsMarcas(m); return !ts||Date.now()-ts>5*3600e3; }
 let H=null, C=null;                       // {habitaciones,cargado} · {casas,cargado}
 const UI={sigue:{},modo:LS.get('pl_modo',null),tab:{hab:LS.get('pl_tab_hab','1'),cas:LS.get('pl_tab_cas','0')},q:''};
+// Desactivado el 9/11/2026: no se envían avisos a familias. Para volver a activarlo, poner true y reinstalar los activadores del servidor.
+const SMS_ACTIVO=false;
 const ENV=LS.get('pl_envio',{url:'',clave:'',movil:''});
 let COLA=LS.get('pl_cola',[]), HIST=LS.get('pl_hist',[]);
 let AV=LS.get('pl_avisos',{lista:[],porParte:3,t:0});
@@ -292,7 +294,7 @@ function contar(m,t){
 
 /* ---------- pantallas ---------- */
 function render(){
-  const m=UI.modo&&((UI.modo==='hab'&&H)||(UI.modo==='cas'&&C)||(UI.modo==='avi'&&(H||C))||(UI.modo==='gen'&&C))?UI.modo:null;
+  const m=UI.modo&&((UI.modo==='hab'&&H)||(UI.modo==='cas'&&C)||(UI.modo==='avi'&&(H||C))||(UI.modo==='gen'&&C&&SMS_ACTIVO))?UI.modo:null;
   UI.modo=m; LS.set('pl_modo',m);
   document.getElementById('btnBack').hidden=!m;
   if(!m) return renderInicio();
@@ -312,8 +314,8 @@ function renderInicio(){
       <span><b>Por casas</b><span class="s">${C?`${nC} residentes · ${C.casas.length} casas`:'Sin residentes: toca para cargar el archivo'}</span></span><span class="go">›</span></button>
     <button class="hb avi" data-abrir="avi"><span class="ic"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 2 20h20z"/><path d="M12 10v4"/><circle cx="12" cy="17" r=".8" fill="currentColor"/></svg></span>
       <span><b>Avisos de parte</b><span class="s">${resumenAvisosTxt()}</span></span><span class="go">›</span></button>
-    <button class="hb gen" data-abrir="gen"><span class="ic"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H8l-4 4z"/><path d="M8 9h8M8 12h5"/></svg></span>
-      <span><b>Avisos generales</b><span class="s">SMS a familias y residentes · con código</span></span><span class="go">›</span></button>
+    ${SMS_ACTIVO?`<button class="hb gen" data-abrir="gen"><span class="ic"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H8l-4 4z"/><path d="M8 9h8M8 12h5"/></svg></span>
+      <span><b>Avisos generales</b><span class="s">SMS a familias y residentes · con código</span></span><span class="go">›</span></button>`:''}
   </div>`;
   // últimos envíos
   h+=`<div class="card"><h3>Pases enviados por correo</h3>`;
@@ -769,7 +771,7 @@ async function abrir(m){
   if(!H&&!C&&ENV.url&&ENV.clave&&navigator.onLine!==false){ await sincronizarResidentes(true); }
   if(m==='avi'){ if(!H&&!C){ informar('Todavía no hay lista de residentes',SIN_LISTA); return; }
     UI.modo='avi'; UI.qa=''; UI.avSel=null; render(); window.scrollTo(0,0); entrar(); consultarAvisos(); return; }
-  if(m==='gen'){ if(!C){ informar('Todavía no hay lista de residentes',SIN_LISTA); return; }
+  if(m==='gen'){ if(!SMS_ACTIVO) return; if(!C){ informar('Todavía no hay lista de residentes',SIN_LISTA); return; }
     UI.modo='gen'; AG.vista=null; AG.error=''; render(); window.scrollTo(0,0); entrar(); return; }
   if((m==='hab'&&!H)||(m==='cas'&&!C)){ informar('Todavía no hay lista de residentes',SIN_LISTA); return; }
   UI.modo=m; UI.q=''; render(); window.scrollTo(0,0); entrar();
