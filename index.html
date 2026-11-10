@@ -110,12 +110,6 @@ details.mas .row{margin-top:6px}
 .hb .ic{width:46px;height:46px;border-radius:12px;display:grid;place-items:center;background:#e8edf6;color:#243957;flex:none}
 .hb.cas .ic{background:#e2f0ec;color:#2e6b5e}
 .hb.avi .ic{background:#fbe9e1;color:#a1401f}
-.hb.gen .ic{background:#efe9f6;color:#5b3f86}
-.ag-sms{white-space:pre-wrap;word-break:break-word;background:#f4f6fa;border:1px solid #d5dce8;border-radius:12px;padding:12px 14px;margin:10px 0;font-size:1rem;line-height:1.45}
-.ag-chips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
-.ag-chip{border:1px solid #d5dce8;border-radius:999px;padding:4px 10px;font-size:.9rem;background:#fff}
-.ag-chip.ok{border-color:#9fd3b8;background:#eaf6ef}.ag-chip.bad{border-color:#e6b4b4;background:#fdf0ef}
-.ag-l{margin:8px 0;padding-left:18px;font-size:.93rem;line-height:1.45}
 .action[disabled]{opacity:.55;pointer-events:none}
 .avlist{display:flex;flex-direction:column;gap:8px}
 .av-row{display:flex;align-items:center;gap:12px;width:100%;min-height:56px;text-align:left;font:inherit;background:#fff;border:1px solid #d5dce8;border-radius:12px;padding:10px 12px;cursor:pointer;color:#172033}
@@ -200,8 +194,8 @@ const marcasDe=m=>Object.keys(S[m].states).length, tsMarcas=m=>LS.get('pl_ts_'+m
 function marcasViejas(m){ const n=marcasDe(m); if(!n) return false; const ts=tsMarcas(m); return !ts||Date.now()-ts>5*3600e3; }
 let H=null, C=null;                       // {habitaciones,cargado} · {casas,cargado}
 const UI={sigue:{},modo:LS.get('pl_modo',null),tab:{hab:LS.get('pl_tab_hab','1'),cas:LS.get('pl_tab_cas','0')},q:''};
-// Desactivado el 9/11/2026: no se envían avisos a familias. Para volver a activarlo, poner true y reinstalar los activadores del servidor.
-const SMS_ACTIVO=false;
+// Los avisos por SMS a familias se quitaron el 10/11/2026: borra lo que quedara guardado en este móvil.
+try{ ['pl_ag_texto','pl_ag_pend','pl_ag_lotes'].forEach(k=>localStorage.removeItem(k)); sessionStorage.removeItem('pl_ag_cod'); }catch(e){}
 const ENV=LS.get('pl_envio',{url:'',clave:'',movil:''});
 let COLA=LS.get('pl_cola',[]), HIST=LS.get('pl_hist',[]);
 let AV=LS.get('pl_avisos',{lista:[],porParte:3,t:0});
@@ -294,12 +288,11 @@ function contar(m,t){
 
 /* ---------- pantallas ---------- */
 function render(){
-  const m=UI.modo&&((UI.modo==='hab'&&H)||(UI.modo==='cas'&&C)||(UI.modo==='avi'&&(H||C))||(UI.modo==='gen'&&C&&SMS_ACTIVO))?UI.modo:null;
+  const m=UI.modo&&((UI.modo==='hab'&&H)||(UI.modo==='cas'&&C)||(UI.modo==='avi'&&(H||C)))?UI.modo:null;
   UI.modo=m; LS.set('pl_modo',m);
   document.getElementById('btnBack').hidden=!m;
   if(!m) return renderInicio();
   if(m==='avi') return renderAvisos();
-  if(m==='gen') return renderGenerales();
   renderLista(m);
 }
 function renderInicio(){
@@ -314,8 +307,6 @@ function renderInicio(){
       <span><b>Por casas</b><span class="s">${C?`${nC} residentes · ${C.casas.length} casas`:'Sin residentes: toca para cargar el archivo'}</span></span><span class="go">›</span></button>
     <button class="hb avi" data-abrir="avi"><span class="ic"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 2 20h20z"/><path d="M12 10v4"/><circle cx="12" cy="17" r=".8" fill="currentColor"/></svg></span>
       <span><b>Avisos de parte</b><span class="s">${resumenAvisosTxt()}</span></span><span class="go">›</span></button>
-    ${SMS_ACTIVO?`<button class="hb gen" data-abrir="gen"><span class="ic"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H8l-4 4z"/><path d="M8 9h8M8 12h5"/></svg></span>
-      <span><b>Avisos generales</b><span class="s">SMS a familias y residentes · con código</span></span><span class="go">›</span></button>`:''}
   </div>`;
   // últimos envíos
   h+=`<div class="card"><h3>Pases enviados por correo</h3>`;
@@ -589,135 +580,6 @@ async function ponerAviso(){
   enviarCola();
 }
 
-/* ---------- avisos generales por SMS (código propio, validado en el servidor) ---------- */
-const AGM=480;
-const AG={alcance:'todos',grupo:'',texto:LS.get('pl_ag_texto',''),quien:LS.get('pl_quien',''),vista:null,cargando:false,enviando:false,error:'',estado:null,
-  pend:LS.get('pl_ag_pend',null), lotes:LS.get('pl_ag_lotes',[])};
-const agCodigo=()=>{ try{ return sessionStorage.getItem('pl_ag_cod')||''; }catch(e){ return AG.cod||''; } };
-const agPonCodigo=v=>{ AG.cod=v; try{ sessionStorage.setItem('pl_ag_cod',v); }catch(e){} };
-const AG_ERR={codigo:'El código de avisos generales no es correcto.',sin_codigo:'El servidor no tiene configurado el código de avisos generales. Avisa al responsable.',bloqueado:'Demasiados intentos con un código incorrecto. Prueba dentro de una hora.',
-  clave:'La clave del envío no es correcta. Revísala en Inicio.',cambiado:'El mensaje, el grupo o los contactos han cambiado desde la vista previa. Genera una vista previa nueva.',vista:'La vista previa ha caducado. Genera una nueva.',
-  vacio:'Ese grupo no tiene residentes.',texto:'Escribe el mensaje.',largo:`El mensaje no puede pasar de ${AGM} caracteres.`,grupo:'Elige la casa o el curso.',proveedor:'El servidor no tiene configurado el envío de SMS.',
-  interno:'El servicio ha dado un error. Inténtalo de nuevo.',lote:'Error interno del envío. Vuelve a generar la vista previa.',sinlote:'No se encuentra ese envío en el registro.'};
-const agErr=r=>AG_ERR[r&&r.error]||'El servicio ha respondido con un error.';
-function agGrupos(){
-  const casas=C?C.casas.map(c=>c.casa):[], cursos=new Set();
-  if(C) C.casas.forEach(c=>c.people.forEach(p=>String(p.curso||'').split('/').map(x=>x.trim()).filter(Boolean).forEach(x=>cursos.add(x))));
-  return {casas,cursos:[...cursos].sort((a,b)=>a.localeCompare(b,'es'))};
-}
-function agSegmentos(t){ const uni=/[^\n\r !"#$%&'()*+,\-./0-9:;<=>?@A-Z\[\\\]^_a-z{|}~¡£¤¥§¿ÄÅÆÇÉÑÖØÜßàäåæèéìñòöøùü€]/.test(t); const n=t.length; if(!n) return 0; return uni?(n<=70?1:Math.ceil(n/67)):(n<=160?1:Math.ceil(n/153)); }
-function agGrupoTxt(a,g){ return a==='todos'?'Todos los residentes activos':a==='casa'?g:'Curso '+g; }
-function agInvalidar(){ if(AG.vista){ AG.vista=null; const v=document.getElementById('agVista'); if(v) v.innerHTML=agVistaHTML(); } AG.error=''; }
-
-function renderGenerales(){
-  document.getElementById('titulo').textContent='Avisos generales';
-  document.getElementById('sub').textContent='SMS a las familias o a los residentes mayores de edad. Primero se ve la vista previa; nada sale sin confirmar.';
-  const {casas,cursos}=agGrupos(), cod=agCodigo();
-  let h='';
-  if(!ENV.url||!ENV.clave) h+='<p class="aviso">Este móvil no tiene configurado el envío. Configúralo en Inicio.</p>';
-  if(AG.pend) h+=`<div class="aviso"><b>Hay un envío sin confirmar por el servidor</b> (${esc(agGrupoTxt(AG.pend.alcance,AG.pend.grupo))}). Puede que se cortara la conexión. Comprobarlo no lo envía dos veces.
-    <div class="row" style="margin-top:8px"><button class="action primary" data-act="agReintentar">Comprobar ahora</button><button class="action" data-act="agOlvidar">Descartar</button></div></div>`;
-  h+=`<div class="card">
-    <div class="field"><label for="agCod">Código de avisos generales</label><input id="agCod" type="password" autocomplete="off" value="${esc(cod)}" placeholder="Código del equipo (no es la clave del envío)"><span class="small">Se recuerda solo mientras la app esté abierta.</span></div>
-    <div class="field"><label for="agQuien">Quién envía</label><input id="agQuien" value="${esc(AG.quien)}" placeholder="Tu nombre" autocomplete="name"></div>
-    <div class="field"><label for="agAlc">Destinatarios</label><select id="agAlc">
-      <option value="todos"${AG.alcance==='todos'?' selected':''}>Todos los residentes activos</option>
-      <option value="casa"${AG.alcance==='casa'?' selected':''}>Una casa</option>
-      <option value="curso"${AG.alcance==='curso'?' selected':''}>Un curso</option></select></div>
-    ${AG.alcance==='todos'?'':`<div class="field"><label for="agGrp">${AG.alcance==='casa'?'Casa':'Curso'}</label><select id="agGrp"><option value="">Elige…</option>${(AG.alcance==='casa'?casas:cursos).map(x=>`<option${AG.grupo===x?' selected':''}>${esc(x)}</option>`).join('')}</select></div>`}
-    <div class="field"><label for="agTxt">Mensaje</label><textarea id="agTxt" maxlength="${AGM}" rows="5" placeholder="Ej.: Residencia La Santa Espina: les recordamos que el domingo celebramos la Eucaristía a las 12:00 con las familias.">${esc(AG.texto)}</textarea>
-      <span class="small" id="agCnt">${agContador()}</span></div>
-    <p class="small">Recibe el SMS el residente si es mayor de edad y su padre, madre o tutor si es menor. Los casos dudosos quedan para contacto manual.</p>
-    <div class="row"><button class="action primary" data-act="agVista"${AG.cargando?' disabled':''}>${AG.cargando?'Preparando…':'Ver vista previa'}</button></div>
-    <p class="small bad" id="agErr">${esc(AG.error)}</p></div>
-    <div id="agVista">${agVistaHTML()}</div>
-    <div id="agEstado">${agEstadoHTML()}</div>`;
-  document.getElementById('main').innerHTML=h;
-}
-function agContador(){ const n=AG.texto.length, s=agSegmentos(AG.texto); return `${n}/${AGM} caracteres${n?` · ${s} ${s===1?'SMS':'SMS encadenados'} por destinatario`:''}`; }
-function agVistaHTML(){
-  const v=AG.vista; if(!v) return '';
-  const man=v.manuales||[], com=v.compartidos||[];
-  return `<div class="card ag-vista"><h3>Vista previa</h3>
-    ${v.real?'':'<p class="aviso"><b>Modo simulación:</b> el envío se registrará pero no saldrá ningún SMS.</p>'}
-    <p class="small">Destinatarios: <b>${esc(agGrupoTxt(v.alcance,v.grupo))}</b> · ${v.total} residentes</p>
-    <div class="ag-sms">${esc(v.texto)}</div>
-    <dl class="tot"><div><dt>SMS que se enviarán</dt><dd><b>${v.sms}</b></dd></div><div><dt>Contacto manual</dt><dd>${man.length}</dd></div><div><dt>Números compartidos</dt><dd>${com.length}</dd></div></dl>
-    ${man.length?`<details class="mas"><summary>Contacto manual (${man.length}) ›</summary><ul class="ag-l">${man.map(x=>`<li><b>${esc(x.nombre)}</b> · ${esc(x.estado)}${x.nota?' — '+esc(x.nota):''}</li>`).join('')}</ul></details>`:''}
-    ${com.length?`<details class="mas"><summary>Números compartidos (${com.length}) ›</summary><ul class="ag-l">${com.map(x=>`<li><b>${esc(x.nombre)}</b> — ${esc(x.nota)}. Recibe un solo SMS.</li>`).join('')}</ul></details>`:''}
-    <p class="small">La vista previa vale ${v.validoMin||30} minutos. Si cambias el mensaje o el grupo, hay que generarla de nuevo.</p>
-    <div class="row"><button class="action send" data-act="agEnviar"${AG.enviando||!v.sms?' disabled':''}>${AG.enviando?'Enviando…':v.real?`Enviar ${v.sms} SMS`:`Registrar simulación (${v.sms})`}</button></div></div>`;
-}
-function agEstadoHTML(){
-  const e=AG.estado, L=AG.lotes;
-  let h='';
-  if(e&&e.ok){
-    const orden=['En cola','Aceptado por SMSGate','Entrega confirmada','Incierto · revisar','Fallido','Rechazado por SMSGate','Datos inválidos','Simulado (no se envía)','Contactar con el tutor','Contacto manual','Número compartido'];
-    const chips=Object.keys(e.cuenta).sort((a,b)=>orden.indexOf(a)-orden.indexOf(b)).map(k=>`<span class="ag-chip ${k==='Entrega confirmada'?'ok':/Fallido|Rechazado|Incierto|inválidos/.test(k)?'bad':''}">${esc(k)}: <b>${e.cuenta[k]}</b></span>`).join('');
-    h+=`<div class="card"><h3>Resultado del envío${e.simulado?' (simulación)':''}</h3><p class="small">${e.fecha?new Date(e.fecha).toLocaleString('es-ES',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):''}</p>
-      <div class="ag-chips">${chips}</div>
-      <p class="small"><b>Aceptado por SMSGate</b> = el móvil de la residencia lo tiene para enviar. <b>Entrega confirmada</b> = el operador confirma que llegó (se revisa cada hora). <b>Incierto</b> = no se sabe si salió: se revisa a mano y no se reenvía solo.</p>
-      <details class="mas"><summary>Ver cada destinatario ›</summary><ul class="ag-l">${e.detalle.map(x=>`<li><b>${esc(x.nombre)}</b> · ${esc(x.tipo)} · ${esc(x.estado)}${x.nota?' — '+esc(x.nota):''}</li>`).join('')}</ul></details>
-      <div class="row"><button class="action" data-act="agActualizar">Actualizar estado</button></div></div>`;
-  }
-  if(L.length) h+=`<div class="card"><h3>Últimos avisos generales de este móvil</h3><ul class="hist">${L.slice(0,6).map(x=>`<li><b>${new Date(x.f).toLocaleString('es-ES',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</b> · ${esc(agGrupoTxt(x.alcance,x.grupo))}${x.sim?' · simulación':''}<br><button class="action" data-aglote="${esc(x.lote)}">Ver resultado</button></li>`).join('')}</ul></div>`;
-  return h;
-}
-function agPintar(id,html){ const e=document.getElementById(id); if(e) e.innerHTML=html; }
-function agLeerForm(){ const c=document.getElementById('agCod'), q=document.getElementById('agQuien'); if(c) agPonCodigo(c.value.trim()); if(q){ AG.quien=q.value.trim(); LS.set('pl_quien',AG.quien); } }
-async function agPedirVista(){
-  agLeerForm();
-  if(!ENV.url||!ENV.clave){ toast('Primero configura el envío en Inicio.'); return; }
-  if(!agCodigo()){ toast('Escribe el código de avisos generales'); document.getElementById('agCod').focus(); return; }
-  if(!AG.texto.trim()){ toast('Escribe el mensaje'); document.getElementById('agTxt').focus(); return; }
-  if(AG.alcance!=='todos'&&!AG.grupo){ toast(AG.alcance==='casa'?'Elige la casa':'Elige el curso'); return; }
-  if(navigator.onLine===false){ toast('Sin internet: la vista previa necesita conexión'); return; }
-  const pedido={alcance:AG.alcance,grupo:AG.grupo,texto:AG.texto.trim()};
-  AG.cargando=true; AG.error=''; AG.vista=null; renderGenerales();
-  try{ const r=await post(Object.assign({tipo:'avisoGeneralVista',codigo:agCodigo()},pedido));
-    // Si el borrador cambió mientras llegaba la respuesta, esta vista ya no vale.
-    if(pedido.alcance!==AG.alcance||pedido.grupo!==AG.grupo||pedido.texto!==AG.texto.trim()) return;
-    if(r&&r.ok) AG.vista=r; else AG.error=agErr(r);
-  }catch(e){ AG.error='No se pudo conectar. Comprueba la conexión.'; }
-  finally{ AG.cargando=false; if(UI.modo==='gen'){ renderGenerales(); const v=document.getElementById('agVista'); if(AG.vista&&v) v.scrollIntoView({block:'start',behavior:'smooth'}); } }
-}
-async function agConfirmar(){
-  const v=AG.vista; if(!v||AG.enviando) return;
-  agLeerForm();
-  const ok=await hoja({titulo:v.real?`¿Enviar ${v.sms} SMS?`:'¿Registrar la simulación?',
-    html:`<p>${esc(agGrupoTxt(v.alcance,v.grupo))}.</p><div class="ag-sms">${esc(v.texto)}</div>${(v.manuales||[]).length?`<p class="small">${v.manuales.length} ${v.manuales.length===1?'caso queda':'casos quedan'} para contacto manual.</p>`:''}${v.real?'<p class="small">Una vez confirmado no se puede deshacer.</p>':'<p class="small">Modo simulación: no sale ningún SMS.</p>'}`,
-    ok:v.real?'Enviar':'Registrar',clase:'send'});
-  if(!ok||AG.vista!==v) return;
-  // El lote se guarda en el móvil ANTES de mandarlo: si se corta la conexión se reintenta con el mismo y el servidor no lo duplica.
-  AG.pend={lote:(uid()+uid()+uid()).replace(/[^a-z0-9]/gi,''),huella:v.huella,alcance:v.alcance,grupo:v.grupo,texto:v.texto,quien:AG.quien,real:v.real,f:Date.now()};
-  LS.set('pl_ag_pend',AG.pend);
-  await agMandar();
-}
-async function agMandar(){
-  const p=AG.pend; if(!p||AG.enviando) return;
-  AG.enviando=true; agPintar('agVista',agVistaHTML());
-  try{
-    const r=await post({tipo:'avisoGeneralEnviar',codigo:agCodigo(),lote:p.lote,huella:p.huella,alcance:p.alcance,grupo:p.grupo,texto:p.texto,quien:p.quien});
-    if(r&&r.ok){
-      AG.pend=null; LS.set('pl_ag_pend',null); AG.vista=null; AG.estado=r;
-      if(!AG.lotes.some(x=>x.lote===r.lote)){ AG.lotes.unshift({lote:r.lote,f:Date.now(),alcance:p.alcance,grupo:p.grupo,sim:!!r.simulado}); AG.lotes=AG.lotes.slice(0,20); LS.set('pl_ag_lotes',AG.lotes); }
-      toast(r.repetido?'Este envío ya estaba registrado: no se ha repetido':r.simulado?'Simulación registrada: no ha salido ningún SMS':'Envío registrado. Los SMS salen poco a poco desde el móvil de la residencia');
-    } else {
-      // Respuesta clara del servidor: el lote NO se registró.
-      AG.pend=null; LS.set('pl_ag_pend',null);
-      if(r&&(r.error==='cambiado'||r.error==='vista')) AG.vista=null;
-      AG.error=agErr(r); toast(AG.error);
-    }
-  }catch(e){ toast('No se pudo confirmar con el servidor. Pulsa «Comprobar ahora» cuando haya conexión: no se enviará dos veces.'); }
-  finally{ AG.enviando=false; if(UI.modo==='gen') renderGenerales(); }
-}
-async function agVerEstado(lote){
-  if(!lote) return; agLeerForm();
-  if(!agCodigo()){ toast('Escribe el código de avisos generales'); return; }
-  try{ const r=await post({tipo:'avisoGeneralEstado',codigo:agCodigo(),lote}); if(r&&r.ok){ AG.estado=r; agPintar('agEstado',agEstadoHTML()); } else toast(agErr(r)); }
-  catch(e){ toast('No se pudo conectar.'); }
-}
-
 /* ---------- lista de residentes desde la hoja de Google ---------- */
 let sincronizando=false;
 function mapaFotos(){
@@ -771,8 +633,6 @@ async function abrir(m){
   if(!H&&!C&&ENV.url&&ENV.clave&&navigator.onLine!==false){ await sincronizarResidentes(true); }
   if(m==='avi'){ if(!H&&!C){ informar('Todavía no hay lista de residentes',SIN_LISTA); return; }
     UI.modo='avi'; UI.qa=''; UI.avSel=null; render(); window.scrollTo(0,0); entrar(); consultarAvisos(); return; }
-  if(m==='gen'){ if(!SMS_ACTIVO) return; if(!C){ informar('Todavía no hay lista de residentes',SIN_LISTA); return; }
-    UI.modo='gen'; AG.vista=null; AG.error=''; render(); window.scrollTo(0,0); entrar(); return; }
   if((m==='hab'&&!H)||(m==='cas'&&!C)){ informar('Todavía no hay lista de residentes',SIN_LISTA); return; }
   UI.modo=m; UI.q=''; render(); window.scrollTo(0,0); entrar();
 }
@@ -793,7 +653,6 @@ document.addEventListener('click',async e=>{
   const li=e.target.closest('[data-hist]'); if(li&&!e.target.closest('button')){ verPase(li.dataset.hist); return; }
   const b=e.target.closest('button'); if(!b) return;
   if(b.dataset.abrir){ abrir(b.dataset.abrir); return; }
-  if(b.dataset.aglote){ agVerEstado(b.dataset.aglote); return; }
   if(b.dataset.avsel!=null){ UI.avSel=b.dataset.avsel; UI.avNota=''; UI.avMot=null; UI.avQuien=null; render(); window.scrollTo(0,0); return; }
   if(b.dataset.mom!=null){ const m=UI.modo; if(!m) return; ponMomento(m,b.dataset.mom); if(UI.faltaMom===m) UI.faltaMom=null; const box=document.getElementById('momento'); if(box) box.outerHTML=htmlMomento(m); return; }
   if(b.dataset.tab!=null){ UI.tab[UI.modo]=b.dataset.tab; LS.set('pl_tab_'+UI.modo,b.dataset.tab); render(); window.scrollTo(0,0); return; }
@@ -825,11 +684,6 @@ document.addEventListener('click',async e=>{
   if(a==='sincronizar'){ sincronizarResidentes(true); return; }
   if(a==='avPoner'){ ponerAviso(); return; }
   if(a==='avCerrar'){ UI.avSel=null; render(); return; }
-  if(a==='agVista'){ agPedirVista(); return; }
-  if(a==='agEnviar'){ agConfirmar(); return; }
-  if(a==='agReintentar'){ agLeerForm(); agMandar(); return; }
-  if(a==='agOlvidar'){ if(!await hoja({titulo:'¿Descartar el envío pendiente?',html:'<p>Solo se borra el aviso de este móvil. Si el servidor llegó a registrarlo, seguirá en «Avisos generales · Envíos».</p>',ok:'Descartar',clase:'dangerfill'})) return; AG.pend=null; LS.set('pl_ag_pend',null); renderGenerales(); return; }
-  if(a==='agActualizar'){ agVerEstado(AG.estado&&AG.estado.lote); return; }
   if(a==='seguir'){ UI.sigue[UI.modo]=true; render(); }
   if(a==='nuevo'){ const m=UI.modo; if(!await hoja({titulo:'¿Empezar un pase nuevo?',html:'<p>Se borrarán todas las marcas de esta lista.</p>',ok:'Dejar en blanco',clase:'dangerfill'})) return;
     S[m]={states:{},reasons:{},late:{}}; guardarEstado(m); ponMomento(m,''); UI.sigue[m]=false; render(); window.scrollTo(0,0); toast('Lista en blanco: puedes empezar el pase'); }
@@ -846,15 +700,13 @@ document.addEventListener('click',async e=>{
 document.addEventListener('change',e=>{
   const el=e.target, m=UI.modo;
   if(el.id==='avMot'){ UI.avMot=el.value; return; }
-  if(el.id==='agAlc'){ AG.alcance=el.value; AG.grupo=''; agInvalidar(); renderGenerales(); return; }
-  if(el.id==='agGrp'){ AG.grupo=el.value; agInvalidar(); return; }
   if(el.classList.contains('absence-reason')){ S[m].reasons[el.dataset.key]=el.value; guardarEstado(m); pintarPersona(m,el.dataset.key); pintarResumen(m); }
   if(el.classList.contains('late-time')){ S[m].late[el.dataset.key]=el.value; guardarEstado(m); pintarPersona(m,el.dataset.key); }
   if(el.id==='fichero'&&el.files[0]){ cargarArchivo(el.files[0]); el.value=''; }
 });
 document.addEventListener('touchstart',()=>{},{passive:true}); /* iOS: activa :active en los botones */
 document.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.dataset&&e.target.dataset.hist){ e.preventDefault(); verPase(e.target.dataset.hist); return; } if(e.key==='Enter'&&(e.target.id==='search'||e.target.id==='searchAv')) e.target.blur(); });
-document.addEventListener('input',e=>{ if(e.target.id==='agCod'||e.target.id==='agQuien'){ agLeerForm(); return; } if(e.target.id==='agTxt'){ AG.texto=e.target.value; LS.set('pl_ag_texto',AG.texto); const c=document.getElementById('agCnt'); if(c) c.textContent=agContador(); agInvalidar(); return; } if(e.target.id&&e.target.id.startsWith('env_')) ENV[e.target.id.slice(4)]=e.target.value; if(e.target.id==='searchAv'){ UI.qa=e.target.value; pintarAvisos(); return; } if(e.target.id==='avNota') UI.avNota=e.target.value; if(e.target.id==='avQuien') UI.avQuien=e.target.value; if(e.target.id==='obsTxt') OBS.texto=e.target.value; if(e.target.id==='obsNom') OBS.nombre=e.target.value; if(e.target.id==='obsTipo') OBS.tipo=e.target.value; if(e.target.id==='search'){ UI.q=e.target.value; document.getElementById('grupos').innerHTML=htmlGrupos(UI.modo,UI.tab[UI.modo]); } });
+document.addEventListener('input',e=>{ if(e.target.id&&e.target.id.startsWith('env_')) ENV[e.target.id.slice(4)]=e.target.value; if(e.target.id==='searchAv'){ UI.qa=e.target.value; pintarAvisos(); return; } if(e.target.id==='avNota') UI.avNota=e.target.value; if(e.target.id==='avQuien') UI.avQuien=e.target.value; if(e.target.id==='obsTxt') OBS.texto=e.target.value; if(e.target.id==='obsNom') OBS.nombre=e.target.value; if(e.target.id==='obsTipo') OBS.tipo=e.target.value; if(e.target.id==='search'){ UI.q=e.target.value; document.getElementById('grupos').innerHTML=htmlGrupos(UI.modo,UI.tab[UI.modo]); } });
 window.addEventListener('afterprint',()=>document.body.classList.remove('print-absent'));
 window.addEventListener('online',enviarCola);
 setInterval(enviarCola,60000);
