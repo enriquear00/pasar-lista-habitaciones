@@ -121,6 +121,7 @@ details.mas .row{margin-top:6px}
 .av-sel h2{margin:0 0 4px;font-size:1.2rem}
 .av-hist{list-style:none;margin:10px 0;padding:0}.av-hist li{padding:8px 0;border-bottom:1px solid #edf0f5;font-size:.95rem}.av-hist li:last-child{border:0}
 .pend{color:#a14a08;font-weight:600}
+.av-hist li.q{display:flex;align-items:center;gap:10px}.av-hist li.q>span{flex:1}.quitar{flex:none;border:1px solid #d9b8a6;background:#fff;color:#9a3412;border-radius:10px;padding:6px 12px;font:inherit;font-size:.9rem;font-weight:600;cursor:pointer}
 .hb b{display:block;font-size:1.2rem;font-family:var(--display);color:var(--navy)}.hb .s{font-size:.95rem;color:#525c6e}.hb .go{margin-left:auto;font-size:1.6rem;color:#5b667a}
 .field{display:flex;flex-direction:column;gap:4px;margin-bottom:10px}
 .field label{font-size:.92rem;font-weight:600;color:#4a5568}
@@ -455,7 +456,7 @@ async function enviarCola(){
   try{
     while(COLA.length){
       const it=COLA[0]; let res;
-      try{ res=await post(it.obs?{tipo:'observacion',id:it.id,obs:it.obs}:it.aviso?{tipo:'aviso',id:it.id,aviso:it.aviso}:it.anular?{tipo:'anularAviso',id:it.id,ref:it.anular}:{tipo:'pase',id:it.id,pase:it}); }catch(e){ break; }
+      try{ res=await post(it.obs?{tipo:'observacion',id:it.id,obs:it.obs}:it.aviso?{tipo:'aviso',id:it.id,aviso:it.aviso}:it.anular?{tipo:'anularAviso',id:it.id,ref:it.anular,motivo:it.motivo||'',quien:it.quien||''}:{tipo:'pase',id:it.id,pase:it}); }catch(e){ break; }
       if(res&&res.ok){ COLA.shift(); const h=HIST.find(x=>x.id===it.id); if(h) h.enviado=true; if(res.avisos) guardarAvisos(res);
         if(it.obs) toast('Observación enviada. ¡Gracias!'); else if(!it.aviso&&!it.anular) n++; guardarEnvio(); }
       else { const msg=res&&res.error==='clave'?'La clave del envío no es correcta. Revísala en Inicio.':res&&res.error==='momento'?'El servidor rechazó un pase sin momento válido.':'El servicio de correo ha dado un error. Se reintentará.'; if(enviarCola.ult!==msg||Date.now()-(enviarCola.t||0)>15*60e3){ toast(msg); enviarCola.ult=msg; enviarCola.t=Date.now(); } break; }
@@ -536,7 +537,7 @@ function renderAvisos(){
     const partes=Math.floor(sel.n/P), sig=sel.n+1, quien=LS.get('pl_quien','');
     h+=`<div class="av-sel"><h2>${esc(sel.nombre)}</h2><p class="small" style="margin:0">${[sel.hab?'Hab. '+esc(sel.hab):'',esc(sel.casa),esc(sel.curso)].filter(Boolean).join(' · ')}</p>
       <p style="margin:10px 0 0"><b>${sel.n}</b> ${sel.n===1?'aviso':'avisos'} en el curso · <b>${partes}</b> ${partes===1?'parte':'partes'} ${sel.n?puntos(sel.n,P):''}${sel.g?` · <b>${sel.g}</b> ${sel.g===1?'falta grave':'faltas graves'} (a revisión del centro)`:''}</p>
-      ${sel.ult.length||sel.pend.length?`<ul class="av-hist">${sel.pend.map(x=>`<li><span class="pend">Pendiente de enviar</span> · ${esc(x.aviso.motivo)}${x.aviso.nota?' — '+esc(x.aviso.nota):''} · ${esc(x.aviso.quien)}</li>`).join('')}${sel.ult.map(x=>`<li><b>${new Date(x.f).toLocaleDateString('es-ES',{day:'numeric',month:'short'})}</b> · ${esc(x.motivo)}${x.nota?' — '+esc(x.nota):''}${x.quien?' · '+esc(x.quien):''}</li>`).join('')}</ul>`:'<p class="small">Sin avisos en este curso.</p>'}
+      ${sel.ult.length||sel.pend.length?`<ul class="av-hist">${sel.pend.map(x=>`<li><span class="pend">Pendiente de enviar</span> · ${esc(x.aviso.motivo)}${x.aviso.nota?' — '+esc(x.aviso.nota):''} · ${esc(x.aviso.quien)}</li>`).join('')}${sel.ult.map(x=>`<li class="q"><span><b>${new Date(x.f).toLocaleDateString('es-ES',{day:'numeric',month:'short'})}</b> · ${esc(x.motivo)}${x.nota?' — '+esc(x.nota):''}${x.quien?' · '+esc(x.quien):''}</span><button type="button" class="quitar" data-avquitar="${esc(x.id)}">Quitar</button></li>`).join('')}</ul>`:'<p class="small">Sin avisos en este curso.</p>'}
       <div class="field"><label for="avMot">Motivo</label><select id="avMot">${MOTIVOS_AV.map(x=>`<option${UI.avMot===x?' selected':''}>${x}</option>`).join('')}</select></div>
       <div class="field"><label for="avNota">Nota (opcional)</label><textarea id="avNota" style="min-height:70px" placeholder="Qué ha pasado, brevemente">${esc(UI.avNota||'')}</textarea></div>
       <div class="field"><label for="avQuien">Quién pone el aviso</label><input id="avQuien" value="${esc(UI.avQuien!=null?UI.avQuien:quien)}" placeholder="Tu nombre" autocomplete="name"></div>
@@ -575,9 +576,30 @@ async function ponerAviso(){
   UI.avNota=''; UI.avMot=null; UI.avQuien=null; render();
   toast(grave?`Falta grave registrada a ${sel.nombre}: pasa a revisión`:parte?`Aviso puesto: ${sel.nombre} suma un parte`:`Aviso puesto a ${sel.nombre} (${n})`,'Deshacer',()=>{
     const i=COLA.findIndex(x=>x.id===it.id);
-    if(i>=0) COLA.splice(i,1); else COLA.push({id:uid()+uid(),anular:it.id});
+    if(i>=0) COLA.splice(i,1); else COLA.push({id:uid()+uid(),anular:it.id,motivo:'Deshecho justo después de ponerlo',quien:it.aviso.quien});
     guardarEnvio(); render(); toast('Aviso quitado'); if(i<0) enviarCola(); });
   enviarCola();
+}
+
+async function quitarAviso(ref){
+  const sel=personasTodas().find(p=>p.k===UI.avSel); if(!sel) return;
+  const x=(datosAviso(sel.k).ult||[]).find(a=>a.id===ref); if(!x) return;
+  let motivo='', quien=LS.get('pl_quien','');
+  while(true){
+    const cuerpo=`<dl class="tot"><div><dt>Fecha</dt><dd>${new Date(x.f).toLocaleDateString('es-ES',{day:'numeric',month:'long'})}</dd></div><div><dt>Motivo</dt><dd>${esc(x.motivo)}</dd></div>${x.nota?`<div><dt>Nota</dt><dd>${esc(x.nota)}</dd></div>`:''}${x.quien?`<div><dt>Lo puso</dt><dd>${esc(x.quien)}</dd></div>`:''}</dl>
+      <p class="small">El aviso no se borra: queda anulado y deja de contar para los partes.</p>
+      <div class="field"><label for="qMot">Por qué se quita</label><textarea id="qMot" style="min-height:70px" placeholder="Por ejemplo: se puso por error">${esc(motivo)}</textarea></div>
+      <div class="field"><label for="qQuien">Quién lo quita</label><input id="qQuien" value="${esc(quien)}" placeholder="Tu nombre" autocomplete="name"></div>`;
+    const ok=await hoja({titulo:`Quitar un aviso a ${sel.nombre}`,html:cuerpo,ok:'Quitar aviso',clase:'dangerfill'});
+    const em=document.getElementById('qMot'), eq=document.getElementById('qQuien');
+    motivo=(em&&em.value||'').trim(); quien=(eq&&eq.value||'').trim();
+    if(!ok) return;
+    if(motivo&&quien) break;
+    toast(motivo?'Escribe quién quita el aviso':'Escribe por qué se quita el aviso');
+  }
+  LS.set('pl_quien',quien);
+  COLA.push({id:uid()+uid(),anular:ref,motivo:motivo.slice(0,300),quien:quien.slice(0,60)}); guardarEnvio();
+  render(); toast(`Aviso quitado a ${sel.nombre}`); enviarCola();
 }
 
 /* ---------- lista de residentes desde la hoja de Google ---------- */
@@ -653,6 +675,7 @@ document.addEventListener('click',async e=>{
   const li=e.target.closest('[data-hist]'); if(li&&!e.target.closest('button')){ verPase(li.dataset.hist); return; }
   const b=e.target.closest('button'); if(!b) return;
   if(b.dataset.abrir){ abrir(b.dataset.abrir); return; }
+  if(b.dataset.avquitar!=null){ quitarAviso(b.dataset.avquitar); return; }
   if(b.dataset.avsel!=null){ UI.avSel=b.dataset.avsel; UI.avNota=''; UI.avMot=null; UI.avQuien=null; render(); window.scrollTo(0,0); return; }
   if(b.dataset.mom!=null){ const m=UI.modo; if(!m) return; ponMomento(m,b.dataset.mom); if(UI.faltaMom===m) UI.faltaMom=null; const box=document.getElementById('momento'); if(box) box.outerHTML=htmlMomento(m); return; }
   if(b.dataset.tab!=null){ UI.tab[UI.modo]=b.dataset.tab; LS.set('pl_tab_'+UI.modo,b.dataset.tab); render(); window.scrollTo(0,0); return; }
