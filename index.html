@@ -496,7 +496,8 @@ async function probar(){
 
 /* ---------- avisos de parte ---------- */
 const MOTIVOS_AV=['Retraso','Ruido o molestar','Falta de respeto','Uso del móvil','No cumplir el horario','Desorden en la habitación','Falta grave','Otro'];
-const esGrave=m=>norm(m)==='falta grave';   // la falta grave no suma para el parte ordinario: va directa a revisión del centro
+const esGrave=m=>norm(m)==='falta grave';   // la falta grave no suma al contador de avisos: va directa a revisión del centro
+// Solo se cuentan los avisos: si hay parte o no lo deciden los educadores mirando el número (ya no hay «3 avisos = 1 parte»).
 const claveN=n=>norm(n).replace(/[^a-z0-9ñ]+/g,' ').trim();
 function guardarAvisos(r){ AV={lista:r.avisos||[],porParte:r.porParte||3,t:Date.now()}; LS.set('pl_avisos',AV); }
 function personasTodas(){
@@ -516,65 +517,63 @@ function datosAviso(k){
   const g=(s.g||0)-quitados.filter(x=>esGrave(x.motivo)).length+pend.filter(x=>esGrave(x.aviso.motivo)).length;
   return {n,g,pend,ult};
 }
-function resumenAvisosTxt(){ const P=AV.porParte||3; let a=0,p=0; (AV.lista||[]).forEach(x=>{a+=x.n;p+=Math.floor(x.n/P);});
-  a+=COLA.filter(x=>x.aviso&&!esGrave(x.aviso.motivo)).length; return a?`${a} ${a===1?'aviso':'avisos'} en el curso · ${p} ${p===1?'parte':'partes'}`:`Cada ${P} avisos = 1 parte`; }
+function resumenAvisosTxt(){ let a=0; (AV.lista||[]).forEach(x=>{a+=x.n;});
+  a+=COLA.filter(x=>x.aviso&&!esGrave(x.aviso.motivo)).length; return a?`${a} ${a===1?'aviso':'avisos'} en el curso`:'Contador de avisos por residente'; }
 let consultando=false;
 async function consultarAvisos(){
   if(consultando||!ENV.url||!ENV.clave||navigator.onLine===false) return; consultando=true;
   try{ const r=await post({tipo:'consultaAvisos'}); if(r&&r.ok){ guardarAvisos(r); if(UI.modo==='avi'||!UI.modo) renderFondo(); } }
   catch(e){} finally{ consultando=false; }
 }
-function puntos(n,P){ const r=n%P; return '<span class="dots" aria-hidden="true">'+Array.from({length:P},(_,i)=>`<i class="${i<r?'on':''}"></i>`).join('')+'</span>'; }
 function renderAvisos(){
-  const P=AV.porParte||3;
   document.getElementById('titulo').textContent='Avisos de parte';
-  document.getElementById('sub').textContent=`Cada ${P} avisos en el curso = 1 parte. Busca al residente y tócalo para ponerle un aviso.`;
+  document.getElementById('sub').textContent='Se cuentan los avisos de cada residente en el curso; el parte lo decidís vosotros según el número. Busca al residente y tócalo para ponerle un aviso.';
   const T=personasTodas().map(p=>Object.assign(p,datosAviso(p.k)));
   const sel=UI.avSel&&T.find(p=>p.k===UI.avSel);
   let h='';
   if(!ENV.url||!ENV.clave) h+='<p class="aviso">Este móvil no tiene configurado el envío: los avisos se guardarán aquí y se mandarán cuando se configure en Inicio.</p>';
   if(sel){
-    const partes=Math.floor(sel.n/P), sig=sel.n+1, quien=LS.get('pl_quien','');
+    const quien=LS.get('pl_quien','');
     h+=`<div class="av-sel"><h2>${esc(sel.nombre)}</h2><p class="small" style="margin:0">${[sel.hab?'Hab. '+esc(sel.hab):'',esc(sel.casa),esc(sel.curso)].filter(Boolean).join(' · ')}</p>
-      <p style="margin:10px 0 0"><b>${sel.n}</b> ${sel.n===1?'aviso':'avisos'} en el curso · <b>${partes}</b> ${partes===1?'parte':'partes'} ${sel.n?puntos(sel.n,P):''}${sel.g?` · <b>${sel.g}</b> ${sel.g===1?'falta grave':'faltas graves'} (a revisión del centro)`:''}</p>
+      <p style="margin:10px 0 0"><b>${sel.n}</b> ${sel.n===1?'aviso':'avisos'} en el curso${sel.g?` · <b>${sel.g}</b> ${sel.g===1?'falta grave':'faltas graves'} (a revisión del centro)`:''}</p>
       ${sel.ult.length||sel.pend.length?`<ul class="av-hist">${sel.pend.map(x=>`<li><span class="pend">Pendiente de enviar</span> · ${esc(x.aviso.motivo)}${x.aviso.nota?' — '+esc(x.aviso.nota):''} · ${esc(x.aviso.quien)}</li>`).join('')}${sel.ult.map(x=>`<li class="q"><span><b>${new Date(x.f).toLocaleDateString('es-ES',{day:'numeric',month:'short'})}</b> · ${esc(x.motivo)}${x.nota?' — '+esc(x.nota):''}${x.quien?' · '+esc(x.quien):''}</span><button type="button" class="quitar" data-avquitar="${esc(x.id)}">Quitar</button></li>`).join('')}</ul>`:'<p class="small">Sin avisos en este curso.</p>'}
       <div class="field"><label for="avMot">Motivo</label><select id="avMot">${MOTIVOS_AV.map(x=>`<option${UI.avMot===x?' selected':''}>${x}</option>`).join('')}</select></div>
       <div class="field"><label for="avNota">Nota (opcional)</label><textarea id="avNota" style="min-height:70px" placeholder="Qué ha pasado, brevemente">${esc(UI.avNota||'')}</textarea></div>
       <div class="field"><label for="avQuien">Quién pone el aviso</label><input id="avQuien" value="${esc(UI.avQuien!=null?UI.avQuien:quien)}" placeholder="Tu nombre" autocomplete="name"></div>
-      <div class="row"><button class="action avi" data-act="avPoner">Poner aviso${sig%P===0?` (será su parte n.º ${sig/P})`:''}</button><button class="action" data-act="avCerrar">Cancelar</button></div></div>`;
+      <div class="row"><button class="action avi" data-act="avPoner">Poner aviso</button><button class="action" data-act="avCerrar">Cancelar</button></div></div>`;
   }
   h+=`<div class="filters"><input id="searchAv" type="search" enterkeyhint="search" placeholder="Buscar nombre, habitación o casa…" value="${esc(UI.qa||'')}" autocomplete="off"></div>`;
   h+=`<div id="avRes">${listaAvisosHTML()}</div>`;
   document.getElementById('main').innerHTML=h;
 }
 function listaAvisosHTML(){
-  const P=AV.porParte||3, T=personasTodas().map(p=>Object.assign(p,datosAviso(p.k))), q=norm((UI.qa||'').trim());
+  const T=personasTodas().map(p=>Object.assign(p,datosAviso(p.k))), q=norm((UI.qa||'').trim());
   const L=q?T.filter(p=>norm(p.nombre+' '+p.hab+' '+p.casa+' '+p.curso).includes(q)):T.filter(p=>p.n);
   L.sort((a,b)=>(b.n-a.n)||a.nombre.localeCompare(b.nombre,'es'));
   let h=`<h3 style="margin:6px 0 10px">${q?'Resultados':'Con avisos en este curso'}</h3>`;
   if(!L.length) h+=`<p class="small">${q?'No hay coincidencias.':'Nadie tiene avisos todavía. Escribe un nombre arriba para poner el primero.'}</p>`;
-  h+='<div class="avlist">'+L.slice(0,60).map(p=>{ const pa=Math.floor(p.n/P);
+  h+='<div class="avlist">'+L.slice(0,60).map(p=>{
     return `<button class="av-row" data-avsel="${esc(p.k)}"><span class="nm"><b>${esc(p.nombre)}</b><span>${[p.hab?'Hab. '+esc(p.hab):'',esc(p.casa)].filter(Boolean).join(' · ')}</span></span>
-      <span class="av-cnt${pa?' par':''}"><b>${p.n}</b> ${p.n===1?'aviso':'avisos'}${pa?` · <b>${pa}</b> ${pa===1?'parte':'partes'}`:''}${p.n?'<br>'+puntos(p.n,P):''}</span></button>`; }).join('')+'</div>';
+      <span class="av-cnt"><b>${p.n}</b> ${p.n===1?'aviso':'avisos'}</span></button>`; }).join('')+'</div>';
   if(AV.t) h+=`<p class="small" style="margin-top:14px">Recuento actualizado el ${new Date(AV.t).toLocaleString('es-ES',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}. Se comparte entre todos los móviles.</p>`;
   return h;
 }
 function pintarAvisos(){ const e=document.getElementById('avRes'); if(e) e.innerHTML=listaAvisosHTML(); }
 async function ponerAviso(){
-  const P=AV.porParte||3, sel=personasTodas().find(p=>p.k===UI.avSel); if(!sel) return;
+  const sel=personasTodas().find(p=>p.k===UI.avSel); if(!sel) return;
   const motivo=document.getElementById('avMot').value, nota=(document.getElementById('avNota').value||'').trim(), quien=(document.getElementById('avQuien').value||'').trim();
   if(!quien){ toast('Escribe quién pone el aviso'); document.getElementById('avQuien').focus(); return; }
   if(motivo==='Otro'&&!nota){ toast('Con «Otro», explica el motivo en la nota'); document.getElementById('avNota').focus(); return; }
   if(esGrave(motivo)&&!nota){ toast('En una falta grave, explica lo ocurrido en la nota'); document.getElementById('avNota').focus(); return; }
-  const grave=esGrave(motivo), n=datosAviso(sel.k).n+(grave?0:1), parte=!grave&&n%P===0;
-  const cuerpo=(grave?'<p class="aviso"><b>Falta grave:</b> no suma para el parte ordinario. Queda como candidato a parte de expulsión para que lo revise el centro.</p>':parte?`<p class="aviso"><b>Atención:</b> con este aviso suma su parte n.º ${n/P}.</p>`:'')
+  const grave=esGrave(motivo), n=datosAviso(sel.k).n+(grave?0:1);
+  const cuerpo=(grave?'<p class="aviso"><b>Falta grave:</b> no suma al contador de avisos. Queda como candidato a parte de expulsión para que lo revise el centro.</p>':'')
     +`<dl class="tot"><div><dt>Motivo</dt><dd>${esc(motivo)}</dd></div>${nota?`<div><dt>Nota</dt><dd>${esc(nota)}</dd></div>`:''}${grave?'':`<div><dt>Será su aviso</dt><dd>n.º ${n} del curso</dd></div>`}</dl>`;
   if(!await hoja({titulo:`Poner un aviso a ${sel.nombre}`,html:cuerpo,ok:'Poner aviso',clase:'avi'})) return;
   LS.set('pl_quien',quien);
   const it={id:uid()+uid(),aviso:{nombre:sel.nombre,hab:sel.hab,casa:sel.casa,curso:sel.curso,motivo,nota:nota.slice(0,500),quien:quien.slice(0,60),fecha:Date.now()}};
   COLA.push(it); guardarEnvio();
   UI.avNota=''; UI.avMot=null; UI.avQuien=null; render();
-  toast(grave?`Falta grave registrada a ${sel.nombre}: pasa a revisión`:parte?`Aviso puesto: ${sel.nombre} suma un parte`:`Aviso puesto a ${sel.nombre} (${n})`,'Deshacer',()=>{
+  toast(grave?`Falta grave registrada a ${sel.nombre}: pasa a revisión`:`Aviso puesto a ${sel.nombre}: lleva ${n}`,'Deshacer',()=>{
     const i=COLA.findIndex(x=>x.id===it.id);
     if(i>=0) COLA.splice(i,1); else COLA.push({id:uid()+uid(),anular:it.id,motivo:'Deshecho justo después de ponerlo',quien:it.aviso.quien});
     guardarEnvio(); render(); toast('Aviso quitado'); if(i<0) enviarCola(); });
@@ -587,7 +586,7 @@ async function quitarAviso(ref){
   let motivo='', quien=LS.get('pl_quien','');
   while(true){
     const cuerpo=`<dl class="tot"><div><dt>Fecha</dt><dd>${new Date(x.f).toLocaleDateString('es-ES',{day:'numeric',month:'long'})}</dd></div><div><dt>Motivo</dt><dd>${esc(x.motivo)}</dd></div>${x.nota?`<div><dt>Nota</dt><dd>${esc(x.nota)}</dd></div>`:''}${x.quien?`<div><dt>Lo puso</dt><dd>${esc(x.quien)}</dd></div>`:''}</dl>
-      <p class="small">El aviso no se borra: queda anulado y deja de contar para los partes.</p>
+      <p class="small">El aviso no se borra: queda anulado y deja de contar en el contador.</p>
       <div class="field"><label for="qMot">Por qué se quita</label><textarea id="qMot" style="min-height:70px" placeholder="Por ejemplo: se puso por error">${esc(motivo)}</textarea></div>
       <div class="field"><label for="qQuien">Quién lo quita</label><input id="qQuien" value="${esc(quien)}" placeholder="Tu nombre" autocomplete="name"></div>`;
     const ok=await hoja({titulo:`Quitar un aviso a ${sel.nombre}`,html:cuerpo,ok:'Quitar aviso',clase:'dangerfill'});
